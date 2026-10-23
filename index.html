@@ -1,0 +1,1688 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="頭書きツール">
+<title>在宅 頭書き作成ツール</title>
+<style>
+:root {
+  --bg: #f4f6f8;
+  --panel: #ffffff;
+  --ink: #1f2933;
+  --muted: #637081;
+  --line: #d9dee4;
+  --accent: #0f7b6c;
+  --accent-ink: #ffffff;
+  --accent-soft: #e3f3f0;
+  --auto: #fff6cc;
+  --auto-line: #e8c547;
+  --danger: #b4423a;
+  --chip: #eef1f4;
+  --chip-on: #0f7b6c;
+  --sched-on: #0f7b6c;
+  --sched-auto: #f2c94c;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Yu Gothic UI", "Meiryo", "Hiragino Sans", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+h1 { font-size: 18px; margin: 0; }
+h2 { font-size: 15px; margin: 22px 0 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+h2:first-child { margin-top: 0; }
+h3 { margin: 0; font-size: 16px; }
+h4 { margin: 16px 0 6px; font-size: 13px; color: var(--muted); }
+.num {
+  display: inline-grid; place-items: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-ink); font-size: 12px;
+}
+.legend { font-weight: normal; color: var(--muted); font-size: 12px; }
+.auto-chip { background: var(--auto); border: 1px solid var(--auto-line); padding: 0 4px; border-radius: 3px; }
+.warn-chip { border: 2px solid var(--danger); padding: 0 4px; border-radius: 3px; }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.logo { font-size: 28px; }
+.sub { margin: 0; color: var(--muted); font-size: 12px; }
+.top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.privacy {
+  background: var(--accent-soft); color: #0b5a4f; font-size: 12px;
+  padding: 6px 20px; border-bottom: 1px solid var(--line);
+}
+
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid var(--line); background: var(--panel);
+  padding: 6px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--danger); }
+.btn.danger:hover { border-color: var(--danger); }
+.btn.ghost { background: transparent; }
+.btn.small { padding: 3px 9px; font-size: 13px; }
+
+.layout {
+  display: grid; grid-template-columns: minmax(0, 46fr) minmax(0, 54fr);
+  gap: 16px; padding: 16px 20px 40px; align-items: start;
+}
+@media (max-width: 1000px) { .layout { grid-template-columns: minmax(0, 1fr); padding: 12px; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.viewer-panel { position: sticky; top: 12px; max-height: calc(100vh - 24px); display: flex; flex-direction: column; }
+@media (max-width: 1000px) { .viewer-panel { position: static; max-height: none; } }
+
+.dropzone {
+  display: block; text-align: center; cursor: pointer;
+  border: 2px dashed var(--line); border-radius: 10px; padding: 18px 10px; color: var(--muted);
+  transition: border-color .15s, background .15s;
+}
+.dropzone:hover, .dropzone.drag { border-color: var(--accent); background: var(--accent-soft); }
+.dropzone.compact { padding: 8px; }
+.dropzone.compact .dz-icon, .dropzone.compact .dz-sub { display: none; }
+.dz-icon { font-size: 30px; }
+.dz-main { font-weight: bold; color: var(--ink); }
+.dz-sub { font-size: 12px; }
+
+.ocr-status { margin-top: 10px; }
+.status-text { font-size: 13px; margin-bottom: 4px; }
+.bar { height: 8px; background: var(--chip); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+
+#viewerArea { display: flex; flex-direction: column; min-height: 0; flex: 1; margin-top: 10px; }
+#viewerArea[hidden] { display: none; }
+.page-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
+.page-tab { border: 1px solid var(--line); background: var(--chip); border-radius: 5px; padding: 2px 10px; cursor: pointer; font-size: 12px; }
+.page-tab.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.page-tab .st { margin-left: 4px; }
+.viewer-tools { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
+.tip { font-size: 12px; color: var(--muted); }
+.spacer { flex: 1; }
+.page-scroll {
+  overflow: auto; border: 1px solid var(--line); border-radius: 6px; background: #8a939c;
+  flex: 1; min-height: 320px;
+}
+.page-wrap { position: relative; margin: 0 auto; cursor: crosshair; user-select: none; }
+.page-wrap canvas { display: block; width: 100%; height: auto; background: #fff; }
+.sel-rect { position: absolute; border: 2px solid #e05a2b; background: rgba(224, 90, 43, .12); pointer-events: none; }
+
+.fulltext { margin-top: 8px; }
+.fulltext summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.fulltext textarea { width: 100%; margin: 6px 0; font-size: 12px; }
+
+.field-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.fgroup { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.fgroup h3 { font-size: 13px; margin-bottom: 6px; }
+.frow { display: grid; grid-template-columns: 96px minmax(0, 1fr) 30px; align-items: center; gap: 6px; margin: 4px 0; }
+.frow label { font-size: 12px; color: var(--muted); }
+.frow input { width: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; background: #fff; min-width: 0; }
+.frow input.auto { background: var(--auto); border-color: var(--auto-line); }
+.frow input.warn { border-color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); }
+.frow input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.copy1 { border: none; background: none; cursor: pointer; font-size: 14px; padding: 2px; border-radius: 4px; }
+.copy1:hover { background: var(--chip); }
+
+.sched-wrap { overflow-x: auto; }
+.sched { border-collapse: collapse; font-size: 13px; min-width: 100%; }
+.sched th, .sched td { border: 1px solid var(--line); padding: 0; text-align: center; }
+.sched th { background: var(--chip); padding: 4px 6px; font-weight: normal; white-space: nowrap; }
+.sched th.svc { text-align: left; }
+.sched td button {
+  width: 100%; min-width: 36px; height: 30px; border: none; background: #fff; cursor: pointer; font-size: 14px;
+}
+.sched td button:hover { background: var(--accent-soft); }
+.sched td button.on { background: var(--sched-on); color: #fff; }
+.sched td button.on.auto { box-shadow: inset 0 0 0 3px var(--sched-auto); }
+.sched-extra, .note-free { margin-top: 8px; }
+.sched-extra label, .note-free label { display: block; font-size: 12px; color: var(--muted); }
+.sched-extra input, .note-free input { width: 100%; padding: 5px 8px; border: 1px solid var(--line); border-radius: 4px; margin-top: 2px; }
+
+.chip-groups { display: grid; gap: 8px; }
+.cgroup { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px; align-items: start; }
+.cgroup-name { font-size: 12px; color: var(--muted); padding-top: 5px; }
+.cgroup-name small { display: block; font-size: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  border: 1px solid var(--line); background: var(--chip); border-radius: 999px;
+  padding: 4px 12px; cursor: pointer; font-size: 13px;
+}
+.chip:hover { border-color: var(--accent); }
+.chip.on { background: var(--chip-on); color: #fff; border-color: var(--chip-on); }
+
+.outputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.out-box { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.out-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 8px; }
+.out-box textarea { width: 100%; font-size: 13px; border: 1px solid var(--line); border-radius: 4px; padding: 6px; resize: vertical; }
+.hint { font-size: 12px; color: var(--muted); }
+
+.popup {
+  position: fixed; z-index: 30; width: 360px; max-width: calc(100vw - 20px);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.2); padding: 10px;
+}
+.popup-head { display: flex; justify-content: space-between; align-items: center; }
+.popup textarea { width: 100%; margin: 6px 0; font-size: 13px; }
+.popup-sub { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.popup-fields { display: flex; flex-wrap: wrap; gap: 4px; max-height: 220px; overflow: auto; }
+.popup-fields button { font-size: 12px; border: 1px solid var(--line); background: var(--chip); border-radius: 4px; padding: 3px 7px; cursor: pointer; }
+.popup-fields button:hover { background: var(--accent); color: #fff; }
+.popup-fields .grp { width: 100%; font-size: 11px; color: var(--muted); margin-top: 4px; }
+.x { border: none; background: none; font-size: 20px; cursor: pointer; line-height: 1; color: var(--muted); }
+
+.modal { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.35); display: grid; place-items: center; padding: 16px; }
+.modal[hidden] { display: none; }
+.modal-body { background: var(--panel); border-radius: 12px; padding: 18px; width: 860px; max-width: 100%; max-height: calc(100vh - 32px); overflow: auto; }
+.modal-body.narrow { width: 620px; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; }
+.modal-body textarea, .modal-body input[type=text] { width: 100%; padding: 5px 7px; border: 1px solid var(--line); border-radius: 4px; }
+.modal-body label { display: block; font-size: 12px; color: var(--muted); margin-top: 6px; }
+.modal-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
+.cat-row { display: grid; grid-template-columns: 110px 110px 70px minmax(0, 1fr) 32px; gap: 6px; align-items: center; margin: 4px 0; }
+.cat-row.head { font-size: 11px; color: var(--muted); }
+.cat-row label { margin: 0; display: flex; align-items: center; gap: 3px; }
+.svc-row { display: grid; grid-template-columns: 130px minmax(0, 1fr) 32px; gap: 6px; margin: 4px 0; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row2 select, .row2 input { width: 100%; padding: 5px; }
+#phList code { background: var(--chip); padding: 0 3px; margin: 1px; display: inline-block; border-radius: 3px; font-size: 11px; }
+.help li { margin: 6px 0; }
+.licenses summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+.license-text { max-height: 220px; overflow: auto; font-size: 11px; background: var(--chip); padding: 8px; white-space: pre-wrap; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 50;
+  background: #1f2933; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 13px;
+}
+
+/* ===== v2：版ごとの表示切替 ===== */
+body:not(.no-ocr) .lite-only { display: none !important; }
+body.no-ocr .ocr-only { display: none !important; }
+body.no-ocr .layout { grid-template-columns: minmax(0, 1fr); max-width: 980px; margin: 0 auto; }
+body.no-ocr .svc-row { grid-template-columns: 200px 32px; }
+body.no-ocr .svc-row [data-k=keywords] { display: none; }
+
+/* 店舗選択・一覧プルダウン */
+.store-box { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.store-box select { padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.master-row { display: flex; gap: 6px; margin-bottom: 6px; }
+.master-select { flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--accent); border-radius: 6px; background: var(--accent-soft); }
+
+/* 画面下のコピーボタン */
+body { padding-bottom: 64px; }
+.copybar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: flex; justify-content: center; gap: 10px; padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, .95); border-top: 1px solid var(--line);
+}
+.copybar .btn { padding: 9px 18px; font-size: 15px; }
+
+/* iPadなど指で操作する端末：押しやすい大きさに。入力欄は16px以上（小さいとiOSが勝手に拡大する） */
+@media (pointer: coarse) {
+  input, select, textarea { font-size: 16px !important; }
+  .frow { grid-template-columns: 100px minmax(0, 1fr) 40px; }
+  .frow input, .master-select, .store-box select { min-height: 40px; }
+  .copy1 { font-size: 18px; min-width: 40px; min-height: 40px; }
+  .btn { min-height: 40px; }
+  .chip { padding: 9px 16px; font-size: 15px; }
+  .sched td button { height: 44px; min-width: 44px; font-size: 16px; }
+  .sched th { padding: 6px 8px; }
+}
+
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">💊</span>
+    <div>
+      <h1>在宅 頭書き作成ツール</h1>
+      <p class="sub ocr-only">居宅サービス計画書を読み取って、報告書・薬歴の頭書き用にまとめます</p>
+      <p class="sub lite-only">ポチポチ選んで、報告書・薬歴の頭書き用にまとめます</p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <label class="store-box" id="storeBox" hidden>店舗
+      <select id="storeSelect"></select>
+    </label>
+    <button class="btn ghost" id="btnHelp">❓ 使い方</button>
+    <button class="btn ghost" id="btnSettings">⚙️ 設定</button>
+    <button class="btn danger" id="btnClear">🗑 新しい患者（全部消す）</button>
+  </div>
+</header>
+<div class="privacy ocr-only">🔒 読み取りはこのパソコンの中だけで行います。患者さんの情報はどこにも送信・保存されません（画面を閉じると消えます）。</div>
+<div class="privacy lite-only">🔒 入力した患者さんの情報はこの端末の中だけで使い、どこにも送信・保存されません（画面を閉じると消えます）。</div>
+
+<main class="layout">
+  <!-- 左：計画書ビューア（読み取り付き版のみ） -->
+  <section class="panel viewer-panel" id="viewerPanel">
+    <h2><span class="num">1</span>計画書を読み込む</h2>
+    <label class="dropzone" id="dropzone">
+      <input type="file" id="fileInput" accept="application/pdf,image/*" multiple hidden>
+      <div class="dz-icon">📄</div>
+      <div class="dz-main">ここに計画書（PDF・写真）をドラッグ</div>
+      <div class="dz-sub">またはクリックしてファイルを選択 ／ 画像は Ctrl+V で貼り付けもOK</div>
+    </label>
+    <div id="ocrStatus" class="ocr-status" hidden>
+      <div class="status-text" id="ocrStatusText">準備中…</div>
+      <div class="bar"><div class="bar-fill" id="ocrBar"></div></div>
+    </div>
+    <div id="viewerArea" hidden>
+      <div class="page-tabs" id="pageTabs"></div>
+      <div class="viewer-tools">
+        <span class="tip">💡 読めていない項目は、画像を<b>ドラッグで囲む</b>とその部分だけ読み取れます</span>
+        <span class="spacer"></span>
+        <button class="btn small" id="btnRotL" title="左に回転">⟲</button>
+        <button class="btn small" id="btnRotR" title="右に回転">⟳</button>
+        <button class="btn small" id="btnZoomOut" title="縮小">－</button>
+        <button class="btn small" id="btnZoomIn" title="拡大">＋</button>
+      </div>
+      <div class="page-scroll" id="pageScroll">
+        <div class="page-wrap" id="pageWrap">
+          <canvas id="pageCanvas"></canvas>
+          <div class="sel-rect" id="selRect" hidden></div>
+        </div>
+      </div>
+      <details class="fulltext">
+        <summary>読み取った全文を見る（ここからコピーもできます）</summary>
+        <textarea id="fullText" rows="10" spellcheck="false"></textarea>
+        <button class="btn small" id="btnReExtract">この全文から自動抽出をやり直す</button>
+      </details>
+    </div>
+  </section>
+
+  <!-- 右：入力・選択・出力 -->
+  <section class="panel form-panel">
+    <h2><span class="num">2</span><span id="fieldsTitle">抽出結果を確認・修正</span> <small class="legend"><span class="ocr-only"><span class="auto-chip">黄色</span>＝自動で読み取った欄（必ず原本と見比べてください）／</span><span class="warn-chip">赤枠</span>＝電話番号の桁数が合わない</small></h2>
+    <div id="fieldGroups" class="field-groups"></div>
+
+    <h2><span class="num">3</span>週間スケジュール <small class="legend">マスをタップでON/OFF</small></h2>
+    <div class="sched-wrap">
+      <table class="sched" id="schedTable"></table>
+    </div>
+    <div class="sched-extra">
+      <label>スケジュール補足（月1回・隔週など）
+        <input type="text" id="schedNote" placeholder="例：訪問診療 第2・4水曜">
+      </label>
+    </div>
+
+    <h2><span class="num">4</span>頭書き項目をポチポチ選ぶ</h2>
+    <div id="chipGroups" class="chip-groups"></div>
+    <div class="note-free">
+      <label>特記事項（自由入力）
+        <input type="text" id="noteFree" placeholder="例：エンシュアはバニラ味が好き">
+      </label>
+    </div>
+
+    <h2><span class="num">5</span>コピーして貼り付け</h2>
+    <div class="outputs">
+      <div class="out-box">
+        <div class="out-head"><b>報告書 初期登録用</b><button class="btn primary" data-copy="outReport">📋 まとめてコピー</button></div>
+        <textarea id="outReport" rows="18" spellcheck="false"></textarea>
+      </div>
+      <div class="out-box">
+        <div class="out-head"><b>薬歴 頭書き用</b><button class="btn primary" data-copy="outYakureki">📋 まとめてコピー</button></div>
+        <textarea id="outYakureki" rows="18" spellcheck="false"></textarea>
+      </div>
+    </div>
+    <p class="hint">※ 枠の中は直接書き換えてからコピーしてもOKです（上の欄を変えると作り直されます）。選んでいない項目・空欄は薬歴頭書きに出ません。</p>
+  </section>
+</main>
+
+<!-- 画面下にいつも出しておくコピーボタン（iPadで下までスクロールしなくて済むように） -->
+<div class="copybar">
+  <button class="btn primary" data-copy="outYakureki">📋 薬歴頭書きをコピー</button>
+  <button class="btn" data-copy="outReport">📋 報告書用をコピー</button>
+</div>
+
+<!-- 範囲読み取りポップアップ -->
+<div class="popup" id="selPopup" hidden>
+  <div class="popup-head"><b>囲んだ部分の読み取り結果</b><button class="x" id="selClose">×</button></div>
+  <textarea id="selText" rows="3" spellcheck="false"></textarea>
+  <div class="popup-sub">↓ 入れたい欄をクリック（上の文字は直してからでもOK）</div>
+  <div class="popup-fields" id="selFields"></div>
+</div>
+
+<!-- 設定 -->
+<div class="modal" id="settingsModal" hidden>
+  <div class="modal-body">
+    <div class="modal-head"><h3>⚙️ 設定</h3><button class="x" data-close="settingsModal">×</button></div>
+    <p class="hint">設定はこの端末のブラウザに保存されます。「設定ファイルに保存」で他の人・他の端末に配れます。</p>
+
+    <h4>医療機関・ケアマネ事業所・訪看事業所の一覧（プルダウンの中身）</h4>
+    <p class="hint"><span id="builtinCount"></span>この端末で追加した分。1行1件で「区分 → 店舗 → 名称 → TEL → FAX → 担当者候補」の順。Excelで6列の表を作り、範囲をコピーしてここに貼り付けられます。<br>
+      区分は「医療機関」「居宅」「訪看」のどれか。店舗が空欄なら全店に表示。担当者候補は「、」区切り（任意）。</p>
+    <textarea id="setMaster" rows="6" spellcheck="false" placeholder="例）医療機関	A店	○○クリニック	047-000-0000	047-000-0001	△△先生、□□先生"></textarea>
+
+    <h4>頭書き項目（ポチポチの選択肢）</h4>
+    <div id="catEditor"></div>
+    <button class="btn small" id="btnAddCat">＋ 項目を追加</button>
+    <h4>特記事項のよく使う言葉（「、」区切り）</h4>
+    <textarea id="setNotes" rows="2"></textarea>
+
+    <h4>スケジュール</h4>
+    <div class="row2">
+      <label>書き方
+        <select id="setSchedMode">
+          <option value="day">曜日ごと　例：(月)ヘルパー/訪看/デイ</option>
+          <option value="service">サービスごと　例：デイ(水)/ヘルパー(火・金)</option>
+        </select>
+      </label>
+      <label>サービスの区切り
+        <input type="text" id="setSchedJoin" maxlength="3">
+      </label>
+      <label>曜日ごとの区切り（曜日ごとの書き方のとき）
+        <select id="setSchedSep"><option value="\n">改行（曜日ごとに1行）</option><option value=" ">スペース（1行にまとめる）</option></select>
+      </label>
+      <label>頭書き項目の区切り
+        <input type="text" id="setItemSep" maxlength="3">
+      </label>
+    </div>
+    <p class="hint">サービス（表の行）：表示名がそのまま頭書きに出ます（例：デイ、訪看）。<span class="ocr-only">右の欄は計画書の読み取りで使うキーワードです。</span></p>
+    <div id="svcEditor"></div>
+    <button class="btn small" id="btnAddSvc">＋ サービスを追加</button>
+
+    <h4>出力の書式</h4>
+    <p class="hint">{患者氏名} などの{ }に値が入ります。<b>[ ]で囲んだ部分は、中の値が全部空なら丸ごと省略</b>されます。使える名前：<span id="phList"></span></p>
+    <label>報告書 初期登録用<textarea id="setReportTpl" rows="10" spellcheck="false"></textarea></label>
+    <label>薬歴 頭書き用<textarea id="setYakurekiTpl" rows="10" spellcheck="false"></textarea></label>
+    <div class="modal-actions">
+      <button class="btn" id="btnExport">💾 設定ファイルに保存</button>
+      <label class="btn">📂 設定ファイルを読み込む<input type="file" id="importInput" accept=".json,application/json" hidden></label>
+      <button class="btn danger" id="btnResetSettings">初期設定に戻す</button>
+      <span class="spacer"></span>
+      <button class="btn primary" id="btnSaveSettings">保存して閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 使い方 -->
+<div class="modal" id="helpModal" hidden>
+  <div class="modal-body narrow">
+    <div class="modal-head"><h3>❓ 使い方</h3><button class="x" data-close="helpModal">×</button></div>
+    <ol class="help">
+      <li class="ocr-only"><b>計画書を読み込む</b>：PDFやスマホで撮った写真をドラッグ（またはクリックで選択）。自動で読み取りが始まります（1ページ10秒前後）。</li>
+      <li class="ocr-only"><b>抽出結果を確認</b>：黄色の欄は自動で入った値です。<b>必ず原本と見比べて</b>直してください。読めていない欄は、左の画像をマウスで囲むとその部分だけ読み取れます。</li>
+      <li><b>医療機関・事業所は一覧から選ぶ</b>：プルダウンで選ぶと名称・TEL・FAXが入ります。担当医・ケアマネ・訪看の担当者名は手入力。一覧にない所は手入力して「＋一覧に追加」でこの端末に登録できます。</li>
+      <li><b>スケジュール</b>：曜日×サービスのマスをタップ。書き方（曜日ごと／サービスごと）は「⚙️ 設定」で切り替えられます。</li>
+      <li><b>頭書き項目</b>：一包化・管理方法などをポチポチ選ぶ。もう一度押すと解除。</li>
+      <li><b>コピー</b>：画面下の「📋 薬歴頭書きをコピー」→ 電子薬歴に貼り付け。各欄の 📋 で1項目ずつコピーもできます。</li>
+      <li>次の患者さんは右上の「新しい患者」で全部消してから。</li>
+    </ol>
+    <p class="hint lite-only">・iPadでは、Safariの共有ボタン →「ホーム画面に追加」でアプリのように開けます。<br>
+    ・店舗を選ぶと、その店舗の一覧（＋全店共通）だけがプルダウンに出ます。</p>
+    <p class="hint ocr-only">・読み取り精度はスキャンのきれいさで変わります。FAXのかすれ・手書き・斜めの写真は苦手です。<br>
+    ・計画書に書かれていない項目（電話番号など）は空欄になります。</p>
+    <p class="hint">・選択肢や出力の書式は「⚙️ 設定」で自由に変えられます。</p>
+    <details class="licenses ocr-only">
+      <summary>使用している部品とライセンス</summary>
+      <ul class="hint">
+        <li>PDF.js（Mozilla Foundation）… Apache License 2.0</li>
+        <li>Tesseract.js / tesseract.js-core（Tesseract を含む）… Apache License 2.0</li>
+        <li>日本語学習データ jpn.traineddata（tessdata / @tesseract.js-data）… Apache License 2.0 / MIT</li>
+        <li>regenerator-runtime（Facebook, Inc.）… MIT License</li>
+      </ul>
+      <pre class="license-text"></pre>
+    </details>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>/* 一覧（master.csv） */
+window.__MASTER=[];
+</script>
+<script>/* 抽出ルール */
+// 居宅サービス計画書のOCR全文から、頭書きに必要な項目を推定する。
+// OCRは誤読があるので「それらしい候補を入れておく」まで。最終確認は人が行う前提。
+(function (root) {
+  'use strict';
+
+  const REL = '長女|長男|次女|次男|三女|三男|妻|夫|娘|息子|嫁|婿|孫|姉|妹|兄|弟|甥|姪|義母|義父|義娘|母|父|配偶者|キーパーソン|後見人|知人|友人';
+  const HOSP = 'クリニック|医院|病院|診療所|医療センター';
+  const DAYS = ['月', '火', '水', '木', '金', '土', '日'];
+  // 住所の始まり（事業所名と所在地の切れ目）。「見本千葉県」の「本千葉県」を県名と誤認しないよう47都道府県を列挙
+  const PREF_RE = /〒|北海道|東京都|大阪府|京都府|(?:青森|岩手|宮城|秋田|山形|福島|茨城|栃木|群馬|埼玉|千葉|神奈川|新潟|富山|石川|福井|山梨|長野|岐阜|静岡|愛知|三重|滋賀|兵庫|奈良|和歌山|鳥取|島根|岡山|広島|山口|徳島|香川|愛媛|高知|福岡|佐賀|長崎|熊本|大分|宮崎|鹿児島|沖縄)県/;
+
+  // OCRの1行を扱いやすい形にそろえる
+  function normLine(s) {
+    s = s.normalize('NFKC');
+    // 日本語どうしの間に入る余計な1文字スペースを除く（2つ以上の空白は区切りとして残す）
+    s = s.replace(/([^\x00-\x7F]) (?=[^\x00-\x7F])/g, '$1');
+    s = s.replace(/([^\x00-\x7F]) (?=[^\x00-\x7F])/g, '$1');
+    // 数字どうしの間の長音・ダッシュ類はハイフンに
+    s = s.replace(/(\d)\s*[ー\-−‐―–—一]\s*(?=\d)/g, '$1-');
+    // 数字の間のスペース（例：047 711 1701）
+    s = s.replace(/(\d) (?=\d)/g, '$1');
+    s = s.replace(/[ \t]{2,}/g, '  ').trim();
+    return s;
+  }
+
+  function digitsOf(s) { return s.replace(/\D/g, ''); }
+
+  // 行中の電話番号を位置つきで拾う
+  function findPhones(s) {
+    const out = [];
+    const re = /0[\d\-()]{8,14}\d/g;
+    let m;
+    while ((m = re.exec(s))) {
+      const d = digitsOf(m[0]);
+      if (d.length === 10 || d.length === 11) out.push({ num: formatPhone(m[0]), index: m.index });
+    }
+    return out;
+  }
+
+  function formatPhone(raw) {
+    if (/-/.test(raw)) return raw.replace(/[()]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const d = digitsOf(raw);
+    if (d.length === 11) return d.slice(0, 3) + '-' + d.slice(3, 7) + '-' + d.slice(7);
+    if (/^0[36]/.test(d)) return d.slice(0, 2) + '-' + d.slice(2, 6) + '-' + d.slice(6);
+    return d.slice(0, 3) + '-' + d.slice(3, 6) + '-' + d.slice(6);
+  }
+
+  // TELとFAXの振り分け（番号の直前に FAX と書いてあればFAX）
+  function telFax(s) {
+    const res = { tel: '', fax: '' };
+    for (const p of findPhones(s)) {
+      const before = s.slice(Math.max(0, p.index - 8), p.index);
+      if (/FAX|ファックス|ファクス/i.test(before)) { if (!res.fax) res.fax = p.num; }
+      else if (!res.tel) res.tel = p.num;
+    }
+    return res;
+  }
+
+  function cleanName(s) {
+    return (s || '')
+      .replace(/^[\s:：_|\-・「」'"]+/, '')
+      .replace(/[\s:：_|\-・「」'"]+$/, '')
+      .replace(/(様|殿|さん|先生)$/, '')
+      .trim();
+  }
+
+  function looksJapaneseName(s) {
+    return !!s && s.length >= 2 && s.length <= 12 && /[぀-ヿ一-鿿]/.test(s) && !/\d/.test(s);
+  }
+
+  function extract(fullText) {
+    const lines = fullText.split(/\r?\n/).map(normLine).filter(Boolean);
+    const f = {};
+    const set = (k, v) => { v = (v || '').trim(); if (v && !f[k]) f[k] = v; };
+
+    // ---- 患者 ----
+    for (const l of lines) {
+      const m = l.match(/利用者(?:氏)?名\s*[:_|\-]*\s*(.+?)\s*(?:殿|様|生年月日|$)/);
+      if (m) {
+        const n = cleanName(m[1].split(/\s{2,}/)[0]);
+        if (looksJapaneseName(n)) { set('patientName', n); break; }
+      }
+    }
+    for (const l of lines) {
+      if (/所在地|事業所|開催場所/.test(l)) continue;
+      const m = l.match(/住\s*所\s*[:_|\-]*\s*(.+)$/);
+      if (m) {
+        let a = m[1].replace(/(電話|TEL|tel).*$/, '').trim();
+        if (a.length >= 4) { set('patientAddr', a); }
+        const tf = telFax(l);
+        if (tf.tel && /(電話|TEL)/i.test(l)) set('patientTel', tf.tel);
+        if (f.patientAddr) break;
+      }
+    }
+    for (const l of lines) {
+      if (/(利用者|本人|自宅)\S{0,4}(電話|TEL)/i.test(l)) { set('patientTel', telFax(l).tel); }
+    }
+
+    // ---- KP（緊急連絡先・家族） ----
+    {
+      const relRe = new RegExp('[(（]\\s*(' + REL + ')\\s*[)）]');
+      const relRe2 = new RegExp('(' + REL + ')');
+      const emIdx = lines.findIndex(l => /.急連絡先|キーパーソン|KP/.test(l));
+      const cands = [];
+      if (emIdx >= 0) for (let i = emIdx; i < Math.min(lines.length, emIdx + 4); i++) cands.push(i);
+      lines.forEach((l, i) => { if (relRe.test(l) && !cands.includes(i)) cands.push(i); });
+      for (const i of cands) {
+        const l = lines[i];
+        let rel = (l.match(relRe) || [])[1];
+        if (!rel && i !== emIdx) {
+          const m2 = l.match(new RegExp('(\\S{2,8})様\\s*[(（]?\\s*(' + REL + ')'));
+          if (m2) rel = m2[2];
+        }
+        if (!rel) continue;
+        set('kpRel', rel);
+        const before = l.split(new RegExp('[(（]?\\s*' + rel))[0];
+        const nm = cleanName((before.split(/[:：\s]/).filter(Boolean).pop() || '').replace(/【.*?】/, ''));
+        if (looksJapaneseName(nm) && !relRe2.test(nm) && !/^(ご|御)|家族|本人|連絡先/.test(nm)) set('kpName', nm);
+        let tf = telFax(l);
+        if (!tf.tel && lines[i + 1] && !/主治医|医師|ケアマネ/.test(lines[i + 1])) tf = telFax(lines[i + 1]);
+        set('kpTel', tf.tel);
+        break;
+      }
+      if (!f.kpName) {
+        for (const l of lines) {
+          const m = l.match(/家族氏名[①1]?\s*[:：]?\s*(\S{2,10}?)\s*様/);
+          if (m && looksJapaneseName(cleanName(m[1]))) { set('kpName', cleanName(m[1])); break; }
+        }
+      }
+    }
+
+    // ---- 医療機関・主治医 ----
+    {
+      const hospRe = new RegExp('([^\\s:：、,()（）]{1,20}?(?:' + HOSP + '))');
+      const keyLines = [];
+      // OCRで「主治医」が「主治疾」などに化けることがあるので緩めに拾う
+      lines.forEach((l, i) => { if (/主治.|かかりつけ医/.test(l)) keyLines.push(i); });
+      lines.forEach((l, i) => { if (/先生|医師/.test(l) && hospRe.test(l) && !keyLines.includes(i)) keyLines.push(i); });
+      lines.forEach((l, i) => { if (/訪問診療|往診/.test(l) && hospRe.test(l) && !keyLines.includes(i)) keyLines.push(i); });
+      for (const i of keyLines) {
+        const l = lines[i];
+        const after = l.replace(/^.*?(主治医師|主治.|かかりつけ医|訪問診療|往診)\s*[:：]?\s*/, '');
+        const hm = after.match(hospRe);
+        if (!hm) continue;
+        set('hospName', hm[1].replace(/^(先|医|:)/, ''));
+        const rest = after.slice(after.indexOf(hm[1]) + hm[1].length);
+        const dm = rest.match(/^\s*([^\s\d:：]{2,8}?)\s*(先生|医師|Dr)/);
+        if (dm) set('doctor', dm[1]);
+        const tf = telFax(l);
+        set('hospTel', tf.tel); set('hospFax', tf.fax);
+        if (f.hospName && f.doctor) break;
+      }
+    }
+
+    // ---- ケアマネ ----
+    {
+      const pats = [
+        /計画作成者\s*(?:\(担当者\))?\s*氏名\s*[:_|\-]*\s*([^\s\d:_|]{2,6}(?:\s[^\s\d:_|]{1,5})?)/,
+        /(?:担当)?介護支援専門員(?:名|氏名)?\s*[:：]?\s*([^\s\d:よにがのはをと（(][^\s\d:]{1,9})/,
+        /ケアマネ(?:ジャー)?(?:名|氏名)?\s*[:：]\s*(\S{2,10})/,
+      ];
+      const cmCands = [];
+      for (const re of pats) {
+        for (const l of lines) {
+          const m = l.match(re);
+          if (m) {
+            const n = cleanName(m[1]);
+            if (looksJapaneseName(n) && !/説明|専門員|事業|計画/.test(n)) cmCands.push(n);
+          }
+        }
+      }
+      if (cmCands.length) {
+        // 「×山田花子」のように頭にゴミが付いた候補は、別の場所で読めた「山田」等の位置から切り出す
+        let n = cmCands[0];
+        for (const c of cmCands.slice(1)) {
+          const k = n.indexOf(c.slice(0, 2));
+          if (c.length >= 2 && k > 0) { n = n.slice(k); break; }
+        }
+        set('cmName', n);
+      }
+      for (let i = 0; i < lines.length; i++) {
+        const l = lines[i];
+        const m = /居宅介護支援|事業所名/.test(l) && /所在地/.test(l)
+          ? l.match(/所在地\s*[:：_|]*\s*(.+)$/)
+          : l.match(/居宅介護支援.{0,3}[者所](?:・?事業所名?)?\s*[:：_|]*\s*(.+)$/);
+        if (!m || /説明|提供/.test(m[1])) continue;
+        let rest = m[1].trim();
+        let office = rest.split(/\s{2,}/)[0];
+        const am = office.match(PREF_RE);
+        if (am && am.index > 0) office = office.slice(0, am.index);
+        office = office.replace(/(TEL|電話|FAX).*$/i, '').trim();
+        if (office.length >= 2) set('cmOffice', office);
+        let tf = telFax(l);
+        for (let j = i + 1; j < Math.min(lines.length, i + 3) && (!tf.tel || !tf.fax); j++) {
+          if (/TEL|電話|FAX/i.test(lines[j])) {
+            const t2 = telFax(lines[j]);
+            tf = { tel: tf.tel || t2.tel, fax: tf.fax || t2.fax };
+          }
+        }
+        set('cmOfficeTel', tf.tel); set('cmOfficeFax', tf.fax);
+        if (f.cmOffice) break;
+      }
+      if (f.cmOfficeTel) set('cmTel', f.cmOfficeTel);
+    }
+
+    // ---- 訪問看護 ----
+    {
+      const counts = new Map();
+      const re = /(訪問看護(?:ステーション)?)([^\s、。,:：()（）\[\]【】「」・]{1,14})|([^\s、。,:：()（）\[\]【】「」・]{1,12})(訪問看護ステーション)/g;
+      const cut = /(導入|入|伴|会議|による|について|より|開催|予定|指示|計画|事業所|サービス|対応|の|に|を|が|は|へ|と|で|様|等|師|:)/;
+      for (const l of lines) {
+        let m;
+        re.lastIndex = 0;
+        while ((m = re.exec(l))) {
+          let full, tail;
+          if (m[1]) {
+            tail = m[2];
+            const c = tail.match(cut);
+            if (c) tail = tail.slice(0, c.index);
+            full = m[1] + tail;
+          } else {
+            tail = m[3];
+            full = tail + m[4];
+          }
+          if (!tail || tail.length < 2 || /^\d/.test(tail)) continue;
+          const e = counts.get(tail) || { n: 0, full: '' };
+          e.n++;
+          if (full.length > e.full.length) e.full = full;
+          counts.set(tail, e);
+        }
+      }
+      // 「さくら」と誤読混じりの「さくら尊」のような候補は、短い方にまとめて数える
+      let best = null;
+      for (const [tail, e] of counts) {
+        let score = 0;
+        for (const [t2, e2] of counts) if (t2.startsWith(tail)) score += e2.n;
+        if (!best || score > best.score || (score === best.score && tail.length < best.tail.length)) best = { tail, score, full: e.full };
+      }
+      if (best) {
+        set('nsOffice', best.full);
+        for (const l of lines) {
+          if (!l.includes(best.tail)) continue;
+          const nm = l.match(new RegExp(best.tail + '\\s*(?:担当)?\\s*[:：]?\\s*([^\\s\\d:：、。(（]{1,6}?)\\s*(様|さん|氏|Ns|看護師)'));
+          if (nm && looksJapaneseName(cleanName(nm[1]))) set('nsName', cleanName(nm[1]));
+          const tf = telFax(l);
+          set('nsOfficeTel', tf.tel); set('nsOfficeFax', tf.fax);
+        }
+        if (f.nsOfficeTel) set('nsTel', f.nsOfficeTel);
+      }
+    }
+
+    return { fields: f, schedule: guessSchedule(lines) };
+  }
+
+  // 「(月)」「月曜日」などの曜日表記と、その直前に出てくるサービス名を対応づける
+  function guessSchedule(lines, services) {
+    services = services || root.__SERVICES || [];
+    const hits = [];
+    for (const l of lines) {
+      const kwPos = [];
+      services.forEach((s, si) => {
+        for (const kw of s.keywords) {
+          if (!kw) continue;
+          let idx = l.indexOf(kw);
+          while (idx >= 0) { kwPos.push({ si, idx, end: idx + kw.length }); idx = l.indexOf(kw, idx + 1); }
+        }
+      });
+      if (!kwPos.length) continue;
+      const dayRe = /[(（]([月火水木金土日])[)）]|([月火水木金土日])曜/g;
+      let m;
+      while ((m = dayRe.exec(l))) {
+        const day = m[1] || m[2];
+        const prev = kwPos.filter(k => k.end <= m.index).sort((a, b) => b.end - a.end)[0];
+        if (!prev) continue;
+        const between = l.slice(prev.end, m.index);
+        if (/無い|ない|以外|休み|中止/.test(between) || between.length > 30) continue;
+        hits.push({ si: prev.si, day: DAYS.indexOf(day) });
+      }
+    }
+    return hits;
+  }
+
+  const api = { extract, normLine, findPhones, telFax, guessSchedule };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.Extractor = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  'use strict';
+
+  // ================= 設定（既定値） =================
+  const SETTINGS_KEY = 'zaitaku-atamagaki-settings-v1';
+  const LOCAL_MASTER_KEY = 'zaitaku-atamagaki-master-local';
+  const STORE_KEY = 'zaitaku-atamagaki-store';
+  const HAS_OCR = typeof window.Tesseract !== 'undefined';
+  const DEFAULT_SETTINGS = {
+    version: 2,
+    categories: [
+      { name: '調剤', prefix: '', multi: false, options: ['一包化', 'ヒート', '一部一包化'] },
+      { name: '管理方法', prefix: '', multi: true, options: ['薬袋管理', 'カレンダー管理', '自宅でカレンダーセット', 'BOX管理', 'ロボ'] },
+      { name: '支払い', prefix: '', multi: false, options: ['リコーリース', '現金'] },
+      { name: '訪問前TEL', prefix: '訪問前TEL', multi: false, options: ['必要', '不要'] },
+      { name: '処方せん', prefix: '処方せん', multi: false, options: ['原本回収', '病院から送付'] },
+      { name: '駐車場', prefix: '駐車場', multi: false, options: ['有', '無'] },
+    ],
+    notes: ['タバコ臭い', 'エンシュアの味', 'ペットあり', '耳が遠い', '鍵はキーボックス'],
+    services: [
+      { name: '訪看', keywords: ['訪問看護', '訪看'] },
+      { name: 'ヘルパー', keywords: ['訪問介護', 'ヘルパー', '身体介護', '生活援助'] },
+      { name: 'デイ', keywords: ['通所介護', 'デイサービス'] },
+      { name: 'デイケア', keywords: ['通所リハ', 'デイケア'] },
+      { name: '訪問入浴', keywords: ['訪問入浴'] },
+      { name: '訪問リハ', keywords: ['訪問リハ'] },
+      { name: '訪問診療', keywords: ['訪問診療', '往診'] },
+      { name: 'ショート', keywords: ['ショートステイ', '短期入所'] },
+      { name: '訪問不可', keywords: [] },
+    ],
+    // 'day' = (月)ヘルパー/訪看 ／ 'service' = デイ(水)/ヘルパー(火・金)
+    scheduleMode: 'day',
+    scheduleJoin: '/',
+    scheduleSep: '\n',
+    itemSep: '／',
+    reportTemplate: [
+      '患者氏名：{患者氏名}',
+      '患者電話：{患者電話}',
+      '患者住所：{患者住所}',
+      'ＫＰ：{KP氏名}（続柄：{続柄}）ＫＰ連絡先：{KP連絡先}',
+      '',
+      '医療機関名称：{医療機関名称}',
+      '担当医名：{担当医名}',
+      '医療機関連絡先・ＦＡＸ：{医療機関TEL}[／{医療機関FAX}]',
+      '',
+      'ケアマネ氏名：{ケアマネ氏名}',
+      'ケアマネ電話：{ケアマネ電話}',
+      '事業所名称：{事業所名称}',
+      '事業所連絡先・ＦＡＸ：{事業所TEL}[／{事業所FAX}]',
+      '',
+      '担当訪看名：{担当訪看名}',
+      '担当訪看電話：{担当訪看電話}',
+      '訪看事業所名称：{訪看事業所名称}',
+      '訪看事業所連絡先・ＦＡＸ：{訪看事業所TEL}[／{訪看事業所FAX}]',
+    ].join('\n'),
+    yakurekiTemplate: [
+      '[【KP】{KP氏名}[（{続柄}）][ {KP連絡先}]',
+      '][【主治医】{医療機関名称}[ {担当医名}先生][ TEL {医療機関TEL}][ FAX {医療機関FAX}]',
+      '][【CM】{事業所名称}[ {ケアマネ氏名}][ TEL {事業所TEL}][ FAX {事業所FAX}]',
+      '][【訪看】{訪看事業所名称}[ {担当訪看名}][ TEL {訪看事業所TEL}][ FAX {訪看事業所FAX}]',
+      '][【スケジュール】',
+      '{スケジュール}',
+      '][{頭書き項目}',
+      '][特記：{特記事項}]',
+    ].join('\n'),
+  };
+
+  const FIELD_GROUPS = [
+    { title: '👤 患者', fields: [['patientName', '患者氏名'], ['patientTel', '患者電話'], ['patientAddr', '患者住所']] },
+    { title: '👪 KP（キーパーソン）', fields: [['kpName', 'KP氏名'], ['kpRel', '続柄'], ['kpTel', 'KP連絡先']] },
+    { title: '🏥 医療機関', fields: [['hospName', '医療機関名称'], ['doctor', '担当医名'], ['hospTel', '医療機関TEL'], ['hospFax', '医療機関FAX']],
+      master: { kind: '医療機関', name: 'hospName', tel: 'hospTel', fax: 'hospFax', staff: 'doctor' } },
+    { title: '📋 ケアマネ', fields: [['cmName', 'ケアマネ氏名'], ['cmTel', 'ケアマネ電話'], ['cmOffice', '事業所名称'], ['cmOfficeTel', '事業所TEL'], ['cmOfficeFax', '事業所FAX']],
+      master: { kind: '居宅', name: 'cmOffice', tel: 'cmOfficeTel', fax: 'cmOfficeFax', staff: 'cmName', staffTel: 'cmTel' } },
+    { title: '🩺 訪問看護', fields: [['nsName', '担当訪看名'], ['nsTel', '担当訪看電話'], ['nsOffice', '訪看事業所名称'], ['nsOfficeTel', '訪看事業所TEL'], ['nsOfficeFax', '訪看事業所FAX']],
+      master: { kind: '訪看', name: 'nsOffice', tel: 'nsOfficeTel', fax: 'nsOfficeFax', staff: 'nsName', staffTel: 'nsTel' } },
+  ];
+  const masterSelects = {};
+  const ALL_FIELDS = FIELD_GROUPS.flatMap(g => g.fields);
+  const EXTRA_PLACEHOLDERS = ['スケジュール', '頭書き項目', '特記事項'];
+  const DAYS = ['月', '火', '水', '木', '金', '土', '日'];
+
+  // ================= ユーティリティ =================
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, attrs, ...kids) => {
+    const e = document.createElement(tag);
+    if (attrs) for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'class') e.className = v;
+      else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+      else if (v !== false && v != null) e.setAttribute(k, v === true ? '' : v);
+    }
+    for (const k of kids) if (k != null) e.append(k);
+    return e;
+  };
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const splitList = (s) => s.split(/[、,，\n]/).map(x => x.trim()).filter(Boolean);
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; }, 1800);
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      const ta = el('textarea', { style: 'position:fixed;left:-9999px' });
+      ta.value = text; document.body.append(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+    }
+    toast('コピーしました。電子薬歴などに貼り付けてください');
+  }
+
+  // 書式テンプレート：{名前} を値に置換。[ ] の中は値が全部空なら丸ごと省略
+  function renderTemplate(tpl, vals) {
+    let i = 0;
+    function parse(endChar) {
+      let out = '', any = false;
+      while (i < tpl.length) {
+        const c = tpl[i];
+        if (c === endChar) { i++; return { out, any }; }
+        if (c === '[') { i++; const g = parse(']'); if (g.any) { out += g.out; any = true; } continue; }
+        if (c === '{') {
+          const j = tpl.indexOf('}', i);
+          if (j > 0) {
+            const key = tpl.slice(i + 1, j);
+            if (Object.prototype.hasOwnProperty.call(vals, key)) {
+              const v = vals[key] || '';
+              if (v) any = true;
+              out += v; i = j + 1; continue;
+            }
+          }
+        }
+        out += c; i++;
+      }
+      return { out, any };
+    }
+    return parse(null).out.replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  // ================= 設定の読み書き =================
+  let settings = loadSettings();
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if (raw) return normalizeSettings(JSON.parse(raw));
+    } catch (e) { /* 保存領域が使えない環境でも既定値で動かす */ }
+    return clone(DEFAULT_SETTINGS);
+  }
+  function normalizeSettings(s) {
+    const d = clone(DEFAULT_SETTINGS);
+    if (!s || typeof s !== 'object') return d;
+    for (const k of Object.keys(d)) if (s[k] !== undefined) d[k] = s[k];
+    d.services = (d.services || []).map(x => ({ name: x.name, keywords: Array.isArray(x.keywords) ? x.keywords : splitList(String(x.keywords || '')) }));
+    // v1で保存された設定には「訪問不可」が無いので足す
+    if ((s.version || 1) < 2) {
+      if (!d.services.some(x => x.name === '訪問不可')) d.services.push({ name: '訪問不可', keywords: [] });
+      d.version = 2;
+    }
+    return d;
+  }
+
+  // ================= 医療機関・事業所の一覧（プルダウン） =================
+  // 組み込み分（master.csv → ビルド時に埋め込み）＋ この端末で追加した分
+  const MASTER_KINDS = { hosp: '医療機関', cm: '居宅', ns: '訪看' };
+  function normalizeKind(k) {
+    k = String(k || '').trim();
+    if (/医療|病院|クリニック|医院|診療所|Dr/.test(k)) return '医療機関';
+    if (/居宅|ケアマネ|CM|介護支援/i.test(k)) return '居宅';
+    if (/訪看|訪問看護|Ns/i.test(k)) return '訪看';
+    return '';
+  }
+  function cleanMasterRow(r) {
+    return {
+      kind: normalizeKind(r.kind), store: String(r.store || '').trim(), name: String(r.name || '').trim(),
+      tel: String(r.tel || '').trim(), fax: String(r.fax || '').trim(),
+      staff: Array.isArray(r.staff) ? r.staff : splitList(String(r.staff || '')),
+    };
+  }
+  const builtinMaster = (window.__MASTER || []).map(cleanMasterRow).filter(r => r.kind && r.name);
+  let localMaster = loadLocalMaster();
+  function loadLocalMaster() {
+    try { return (JSON.parse(localStorage.getItem(LOCAL_MASTER_KEY)) || []).map(cleanMasterRow).filter(r => r.kind && r.name); }
+    catch (e) { return []; }
+  }
+  function saveLocalMaster() {
+    try { localStorage.setItem(LOCAL_MASTER_KEY, JSON.stringify(localMaster)); } catch (e) { /* 保存できなくても動作は続ける */ }
+  }
+  // Excelからの貼り付け（タブ区切り）やCSVの行を読む：区分, 店舗, 名称, TEL, FAX, 担当者候補
+  function parseMasterText(text) {
+    return text.split(/\r?\n/).map(line => {
+      const c = line.includes('\t') ? line.split('\t') : line.split(',');
+      return cleanMasterRow({ kind: c[0], store: c[1], name: c[2], tel: c[3], fax: c[4], staff: c[5] });
+    }).filter(r => r.kind && r.name);
+  }
+  function masterToText(rows) {
+    return rows.map(r => [r.kind, r.store, r.name, r.tel, r.fax, r.staff.join('、')].join('\t')).join('\n');
+  }
+  function allMaster() { return [...builtinMaster, ...localMaster]; }
+  let currentStore = '';
+  try { currentStore = localStorage.getItem(STORE_KEY) || ''; } catch (e) { /* 既定は全店 */ }
+  function storeList() { return [...new Set(allMaster().map(r => r.store).filter(Boolean))]; }
+  function masterFor(kind) {
+    return allMaster().filter(r => r.kind === kind && (!currentStore || !r.store || r.store === currentStore))
+      .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+  }
+  function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* 保存できなくても動作は続ける */ }
+    window.__SERVICES = settings.services;
+  }
+  window.__SERVICES = settings.services;
+
+  // ================= 状態 =================
+  const fieldInputs = {};
+  const autoFields = new Set();
+  let sched = [];          // sched[サービス][曜日] = 0/1
+  let schedAuto = [];      // 自動でONになったマス
+  let chipSel = {};        // カテゴリ名 → Set(選択肢)
+  let noteSel = new Set();
+  const pages = [];        // { canvas, text, status }
+  let curPage = 0;
+  let zoom = 1;
+
+  function resetSchedule() {
+    sched = settings.services.map(() => DAYS.map(() => 0));
+    schedAuto = settings.services.map(() => DAYS.map(() => 0));
+  }
+  resetSchedule();
+
+  // ================= 抽出結果フォーム =================
+  function buildFields() {
+    const root = $('fieldGroups');
+    root.innerHTML = '';
+    for (const g of FIELD_GROUPS) {
+      const box = el('div', { class: 'fgroup' }, el('h3', null, g.title));
+      if (g.master) {
+        const sel = el('select', { class: 'master-select', 'aria-label': g.master.kind + 'を一覧から選ぶ' });
+        sel.addEventListener('change', () => pickMaster(g.master, sel.value));
+        masterSelects[g.master.kind] = sel;
+        box.append(el('div', { class: 'master-row' }, sel,
+          el('button', { class: 'btn small', title: '下に入力した名称・TEL・FAXを、この端末の一覧に追加します', onclick: () => addToMaster(g.master) }, '＋一覧に追加')));
+        box.append(el('datalist', { id: 'staff_' + g.master.staff }));
+      }
+      for (const [key, label] of g.fields) {
+        const id = 'f_' + key;
+        const isStaff = g.master && g.master.staff === key;
+        const input = el('input', { type: 'text', id, autocomplete: 'off', list: isStaff ? 'staff_' + key : null, placeholder: isStaff ? '手入力（候補があれば表示）' : null });
+        input.addEventListener('input', () => { autoFields.delete(key); input.classList.remove('auto'); updateOutputs(); });
+        fieldInputs[key] = input;
+        box.append(el('div', { class: 'frow' },
+          el('label', { for: id }, label),
+          input,
+          el('button', { class: 'copy1', title: label + 'をコピー', onclick: () => input.value && copyText(input.value) }, '📋')));
+      }
+      root.append(box);
+    }
+  }
+
+  // 一覧（プルダウン）の中身を店舗に合わせて作り直す
+  function refreshMasterSelects() {
+    for (const g of FIELD_GROUPS) {
+      if (!g.master) continue;
+      const sel = masterSelects[g.master.kind];
+      const rows = masterFor(g.master.kind);
+      sel.innerHTML = '';
+      sel.append(el('option', { value: '' }, rows.length ? `▼ 一覧から選ぶ（${rows.length}件）` : '（一覧なし：下に手入力）'));
+      rows.forEach((r, i) => sel.append(el('option', { value: String(i) }, r.name + (r.store ? `（${r.store}）` : ''))));
+      sel.append(el('option', { value: '__manual' }, '一覧にない → 下に手入力'));
+      sel._rows = rows;
+    }
+  }
+
+  function pickMaster(m, value) {
+    const sel = masterSelects[m.kind];
+    if (value === '' || value === '__manual') {
+      if (value === '__manual') { for (const k of [m.name, m.tel, m.fax]) setField(k, '', false); fieldInputs[m.name].focus(); updateOutputs(); }
+      return;
+    }
+    const r = sel._rows[Number(value)];
+    if (!r) return;
+    setField(m.name, r.name, false);
+    setField(m.tel, r.tel, false);
+    setField(m.fax, r.fax, false);
+    // ケアマネ・訪看の電話は事業所の番号と同じことが多いので、空なら入れておく
+    if (m.staffTel && !fieldInputs[m.staffTel].value) setField(m.staffTel, r.tel, false);
+    const dl = $('staff_' + m.staff);
+    dl.innerHTML = '';
+    r.staff.forEach(s => dl.append(el('option', { value: s })));
+    updateOutputs();
+    fieldInputs[m.staff].focus();
+  }
+
+  function addToMaster(m) {
+    const row = cleanMasterRow({ kind: m.kind, store: currentStore, name: fieldInputs[m.name].value, tel: fieldInputs[m.tel].value, fax: fieldInputs[m.fax].value });
+    if (!row.name) { toast('先に下の欄に名称を入力してください'); return; }
+    if (allMaster().some(r => r.kind === row.kind && r.name === row.name && (r.store || '') === row.store)) { toast('すでに一覧にあります'); return; }
+    localMaster.push(row);
+    saveLocalMaster();
+    refreshMasterSelects();
+    toast(`「${row.name}」を一覧に追加しました（この端末に保存）`);
+  }
+
+  function buildStoreSelect() {
+    const sel = $('storeSelect');
+    const stores = storeList();
+    sel.innerHTML = '';
+    sel.append(el('option', { value: '' }, '全店'));
+    stores.forEach(s => sel.append(el('option', { value: s }, s)));
+    if (currentStore && !stores.includes(currentStore)) currentStore = '';
+    sel.value = currentStore;
+    $('storeBox').hidden = !stores.length;
+  }
+
+  function setField(key, value, isAuto) {
+    const input = fieldInputs[key];
+    if (!input) return;
+    input.value = value;
+    input.classList.toggle('auto', !!isAuto);
+    if (isAuto) autoFields.add(key); else autoFields.delete(key);
+  }
+
+  function applyExtraction() {
+    const text = $('fullText').value;
+    if (!text.trim()) return;
+    const { fields, schedule } = window.Extractor.extract(text);
+    for (const [key] of ALL_FIELDS) {
+      const input = fieldInputs[key];
+      const canOverwrite = !input.value || autoFields.has(key);
+      if (fields[key] && canOverwrite) setField(key, fields[key], true);
+    }
+    for (const h of schedule) {
+      if (sched[h.si] && !sched[h.si][h.day]) { sched[h.si][h.day] = 1; schedAuto[h.si][h.day] = 1; }
+    }
+    buildSchedule();
+    updateOutputs();
+  }
+
+  // ================= 週間スケジュール =================
+  function buildSchedule() {
+    const t = $('schedTable');
+    t.innerHTML = '';
+    t.append(el('tr', null, el('th', { class: 'svc' }, 'サービス'), ...DAYS.map(d => el('th', null, d))));
+    settings.services.forEach((s, si) => {
+      const tr = el('tr', null, el('th', { class: 'svc' }, s.name));
+      DAYS.forEach((d, di) => {
+        const on = sched[si] && sched[si][di];
+        const b = el('button', {
+          class: (on ? 'on' : '') + (on && schedAuto[si][di] ? ' auto' : ''),
+          title: on && schedAuto[si][di] ? '計画書から自動でON（要確認）' : `${d}曜 ${s.name}`,
+          onclick: () => { sched[si][di] = sched[si][di] ? 0 : 1; schedAuto[si][di] = 0; buildSchedule(); updateOutputs(); },
+        }, on ? '●' : '');
+        tr.append(el('td', null, b));
+      });
+      t.append(tr);
+    });
+  }
+
+  function scheduleText() {
+    const parts = [];
+    const join = settings.scheduleJoin;
+    if (settings.scheduleMode === 'service') {
+      // サービスごと：デイ(水)／ヘルパー(火・金)
+      settings.services.forEach((s, si) => {
+        const days = DAYS.filter((d, di) => sched[si] && sched[si][di]);
+        if (days.length) parts.push(`${s.name}(${days.join('・')})`);
+      });
+      return finishSchedule(parts.join(join));
+    }
+    // 曜日ごと：(月)ヘルパー/訪看/デイ
+    DAYS.forEach((d, di) => {
+      const names = settings.services.filter((s, si) => sched[si] && sched[si][di]).map(s => s.name);
+      if (names.length) parts.push(`(${d})${names.join(join)}`);
+    });
+    return finishSchedule(parts.join(settings.scheduleSep));
+  }
+
+  function finishSchedule(txt) {
+    const note = $('schedNote').value.trim();
+    if (note) txt += (txt ? settings.scheduleSep : '') + note;
+    return txt;
+  }
+
+  // ================= 頭書き項目（ポチポチ） =================
+  function buildChips() {
+    const root = $('chipGroups');
+    root.innerHTML = '';
+    for (const cat of settings.categories) {
+      if (!chipSel[cat.name]) chipSel[cat.name] = new Set();
+      const sel = chipSel[cat.name];
+      const chips = el('div', { class: 'chips' });
+      for (const opt of cat.options) {
+        chips.append(el('button', {
+          class: 'chip' + (sel.has(opt) ? ' on' : ''),
+          onclick: () => {
+            if (sel.has(opt)) sel.delete(opt);
+            else { if (!cat.multi) sel.clear(); sel.add(opt); }
+            buildChips(); updateOutputs();
+          },
+        }, opt));
+      }
+      root.append(el('div', { class: 'cgroup' },
+        el('div', { class: 'cgroup-name' }, cat.name, cat.multi ? el('small', null, '複数選択可') : null), chips));
+    }
+    const chips = el('div', { class: 'chips' });
+    for (const n of settings.notes) {
+      chips.append(el('button', {
+        class: 'chip' + (noteSel.has(n) ? ' on' : ''),
+        onclick: () => { noteSel.has(n) ? noteSel.delete(n) : noteSel.add(n); buildChips(); updateOutputs(); },
+      }, n));
+    }
+    root.append(el('div', { class: 'cgroup' }, el('div', { class: 'cgroup-name' }, '特記事項', el('small', null, '複数選択可')), chips));
+  }
+
+  function itemsText() {
+    const out = [];
+    for (const cat of settings.categories) {
+      const sel = chipSel[cat.name];
+      if (!sel) continue;
+      for (const opt of cat.options) if (sel.has(opt)) out.push((cat.prefix || '') + opt);
+    }
+    return out.join(settings.itemSep);
+  }
+
+  function notesText() {
+    const out = settings.notes.filter(n => noteSel.has(n));
+    const free = $('noteFree').value.trim();
+    if (free) out.push(free);
+    return out.join('、');
+  }
+
+  // ================= 出力 =================
+  function currentValues() {
+    const vals = {};
+    for (const [key, label] of ALL_FIELDS) vals[label] = fieldInputs[key].value.trim();
+    // 書式側で「先生」を付けるので、候補から「山田先生」を選んでも「先生先生」にならないように
+    vals['担当医名'] = vals['担当医名'].replace(/\s*(先生|医師|Dr\.?)$/, '');
+    vals['スケジュール'] = scheduleText();
+    vals['頭書き項目'] = itemsText();
+    vals['特記事項'] = notesText();
+    return vals;
+  }
+  // 電話番号の桁数チェック（固定電話10桁、携帯・IP電話は070/080/090/050で11桁）
+  function phoneLooksWrong(v) {
+    if (!v) return false;
+    const d = v.replace(/\D/g, '');
+    if (!/^0/.test(d)) return true;
+    if (d.length === 11) return !/^0[5789]0/.test(d);
+    return d.length !== 10;
+  }
+  function checkPhones() {
+    for (const [key, label] of ALL_FIELDS) {
+      if (!/TEL|FAX|電話|連絡先/.test(label)) continue;
+      const bad = phoneLooksWrong(fieldInputs[key].value.trim());
+      fieldInputs[key].classList.toggle('warn', bad);
+      fieldInputs[key].title = bad ? '電話番号の桁数がおかしいかもしれません。原本を確認してください' : '';
+    }
+  }
+
+  function updateOutputs() {
+    checkPhones();
+    const vals = currentValues();
+    $('outReport').value = renderTemplate(settings.reportTemplate, vals);
+    $('outYakureki').value = renderTemplate(settings.yakurekiTemplate, vals);
+  }
+
+  // ================= 読み取りエンジン（Tesseract・PC内） =================
+  const OCR_TARGET_WIDTH = 2400;
+  let enginePromise = null;
+  const workerPool = [];   // { worker, queue: Promise }
+
+  function blobUrl(src) { return URL.createObjectURL(new Blob([src], { type: 'application/javascript' })); }
+
+  function getEngine() {
+    if (enginePromise) return enginePromise;
+    enginePromise = (async () => {
+      setStatus('読み取りエンジンを準備しています…（初回だけ数秒かかります）', 0.02);
+      // 学習データ取得(fetch)をワーカー内で横取りし、同梱データを返す（ネット接続不要にするため）
+      const shim =
+        'self.__JPN_B64=' + JSON.stringify(window.__JPN_B64) + ';' +
+        '(function(){var of=self.fetch;self.fetch=function(u,o){if(String(u).indexOf("jpn.traineddata")>=0){' +
+        'var b=atob(self.__JPN_B64),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);' +
+        'return Promise.resolve(new Response(a));}return of.apply(self,arguments);};})();\n';
+      // file:// で開くとワーカー内から別のblobを読み込めないため、エンジン本体(core)もワーカーに同梱する
+      // （TesseractCore が定義済みなら worker はcoreを読み込みに行かない）
+      const workerPath = blobUrl(shim + window.__TESS_CORE_SRC + '\n;\n' + window.__TESS_WORKER_SRC);
+      const corePath = 'bundled-tesseract-core.wasm.js';
+      const n = Math.max(1, Math.min(2, Math.floor((navigator.hardwareConcurrency || 2) / 2)));
+      for (let k = 0; k < n; k++) {
+        const worker = await window.Tesseract.createWorker('jpn', 1, {
+          workerPath, corePath, workerBlobURL: false,
+          langPath: 'https://offline.invalid/lang', gzip: true, cacheMethod: 'none',
+        });
+        await worker.setParameters({ preserve_interword_spaces: '1' });
+        workerPool.push({ worker, queue: Promise.resolve(), pending: 0 });
+      }
+    })();
+    enginePromise.catch(() => { enginePromise = null; });
+    return enginePromise;
+  }
+
+  // 一番空いているワーカーに仕事を積む
+  function runOnWorker(fn) {
+    const w = workerPool.reduce((a, b) => (b.pending < a.pending ? b : a));
+    w.pending++;
+    const p = w.queue.then(() => fn(w.worker));
+    w.queue = p.catch(() => {}).then(() => { w.pending--; });
+    return p;
+  }
+
+  function setStatus(text, progress) {
+    $('ocrStatus').hidden = false;
+    $('ocrStatusText').textContent = text;
+    if (progress != null) $('ocrBar').style.width = Math.round(progress * 100) + '%';
+  }
+
+  // ================= ファイル読み込み =================
+  async function loadFiles(files) {
+    files = [...files].filter(f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name) || /^image\//.test(f.type));
+    if (!files.length) { toast('PDF か 画像ファイルを選んでください'); return; }
+    setStatus('ファイルを開いています…', 0.01);
+    const startIdx = pages.length;
+    try {
+      for (const f of files) {
+        if (/pdf$/i.test(f.type) || /\.pdf$/i.test(f.name)) await loadPdf(f);
+        else await loadImage(f);
+      }
+    } catch (e) {
+      console.error(e);
+      setStatus('ファイルを開けませんでした：' + (e.message || e), 0);
+      return;
+    }
+    $('viewerArea').hidden = false;
+    $('dropzone').classList.add('compact');
+    showPage(startIdx);
+    ocrPages(pages.slice(startIdx));
+  }
+
+  async function loadPdf(file) {
+    const data = new Uint8Array(await file.arrayBuffer());
+    const pdf = await window.pdfjsLib.getDocument({ data }).promise;
+    for (let p = 1; p <= pdf.numPages; p++) {
+      setStatus(`PDFを画像にしています… ${p}/${pdf.numPages}ページ`, 0.02);
+      const page = await pdf.getPage(p);
+      const vp1 = page.getViewport({ scale: 1 });
+      // 横長(A4横)は幅2400px、縦長は幅1900px程度に（文字の大きさをそろえる）
+      const targetW = vp1.width >= vp1.height ? OCR_TARGET_WIDTH : OCR_TARGET_WIDTH * 0.8;
+      const vp = page.getViewport({ scale: targetW / vp1.width });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(vp.width); canvas.height = Math.round(vp.height);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // intent:'print' … 通常描画は画面更新(requestAnimationFrame)待ちになり、タブを裏にすると止まるため
+      await page.render({ canvasContext: ctx, viewport: vp, intent: 'print' }).promise;
+      pages.push({ canvas, text: '', status: 'wait', name: `${file.name} p${p}` });
+    }
+  }
+
+  async function loadImage(file) {
+    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    let w = bmp.width, h = bmp.height;
+    const long = Math.max(w, h);
+    const s = long < 1800 ? 2400 / long : long > 3600 ? 3200 / long : 1;
+    w = Math.round(w * s); h = Math.round(h * s);
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bmp, 0, 0, w, h);
+    pages.push({ canvas, text: '', status: 'wait', name: file.name || '貼り付け画像' });
+  }
+
+  async function ocrPages(list) {
+    try {
+      await getEngine();
+    } catch (e) {
+      console.error(e);
+      setStatus('読み取りエンジンを起動できませんでした（' + (e.message || e) + '）。手入力とポチポチ選択はそのまま使えます。', 0);
+      return;
+    }
+    let done = 0;
+    const total = list.length;
+    setStatus(`読み取り中… 0/${total}ページ（1ページ10秒前後）`, 0.05);
+    list.forEach(p => { p.status = 'wait'; });
+    renderTabs();
+    await Promise.all(list.map(p => runOnWorker(async (worker) => {
+      p.status = 'run'; renderTabs();
+      try {
+        const { data } = await worker.recognize(p.canvas);
+        p.text = data.text;
+        p.status = 'done';
+      } catch (e) {
+        console.error(e);
+        p.status = 'err';
+      }
+      done++;
+      setStatus(`読み取り中… ${done}/${total}ページ`, 0.05 + 0.95 * done / total);
+      renderTabs();
+      rebuildFullText();
+      applyExtraction();
+    })));
+    const errs = list.filter(p => p.status === 'err').length;
+    setStatus(errs ? `読み取り完了（${errs}ページは失敗しました）` : '✅ 読み取り完了。黄色の欄を原本と見比べて確認してください', 1);
+  }
+
+  function rebuildFullText() {
+    $('fullText').value = pages.map((p, i) => `===== ${i + 1}ページ =====\n${p.text || ''}`).join('\n');
+  }
+
+  // ================= ビューア =================
+  function renderTabs() {
+    const root = $('pageTabs');
+    root.innerHTML = '';
+    pages.forEach((p, i) => {
+      const st = { wait: '⏳', run: '🔍', done: '✅', err: '⚠️' }[p.status] || '';
+      root.append(el('button', { class: 'page-tab' + (i === curPage ? ' on' : ''), title: p.name, onclick: () => showPage(i) },
+        `${i + 1}ページ`, el('span', { class: 'st' }, st)));
+    });
+  }
+
+  function showPage(i) {
+    if (!pages[i]) return;
+    curPage = i;
+    const src = pages[i].canvas;
+    const c = $('pageCanvas');
+    c.width = src.width; c.height = src.height;
+    c.getContext('2d').drawImage(src, 0, 0);
+    applyZoom();
+    renderTabs();
+  }
+
+  function applyZoom() {
+    $('pageWrap').style.width = (zoom * 100) + '%';
+  }
+
+  function rotatePage(dir) {
+    const p = pages[curPage];
+    if (!p) return;
+    const src = p.canvas;
+    const c = document.createElement('canvas');
+    c.width = src.height; c.height = src.width;
+    const ctx = c.getContext('2d');
+    ctx.translate(c.width / 2, c.height / 2);
+    ctx.rotate(dir * Math.PI / 2);
+    ctx.drawImage(src, -src.width / 2, -src.height / 2);
+    p.canvas = c;
+    p.text = '';
+    showPage(curPage);
+    rebuildFullText();
+    ocrPages([p]);
+  }
+
+  // ---- 範囲を囲んで読み取り ----
+  let drag = null;
+  function setupSelection() {
+    const wrap = $('pageWrap');
+    const rect = $('selRect');
+    const pos = (e) => {
+      const r = wrap.getBoundingClientRect();
+      return { x: Math.max(0, Math.min(r.width, e.clientX - r.left)), y: Math.max(0, Math.min(r.height, e.clientY - r.top)) };
+    };
+    wrap.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      drag = { a: pos(e), b: pos(e) };
+      rect.hidden = false;
+      drawRect();
+    });
+    window.addEventListener('mousemove', (e) => { if (drag) { drag.b = pos(e); drawRect(); } });
+    window.addEventListener('mouseup', (e) => {
+      if (!drag) return;
+      const d = drag; drag = null;
+      const x = Math.min(d.a.x, d.b.x), y = Math.min(d.a.y, d.b.y);
+      const w = Math.abs(d.a.x - d.b.x), h = Math.abs(d.a.y - d.b.y);
+      if (w < 8 || h < 6) { rect.hidden = true; return; }
+      ocrRegion({ x, y, w, h }, e.clientX, e.clientY);
+    });
+    function drawRect() {
+      const x = Math.min(drag.a.x, drag.b.x), y = Math.min(drag.a.y, drag.b.y);
+      Object.assign(rect.style, { left: x + 'px', top: y + 'px', width: Math.abs(drag.a.x - drag.b.x) + 'px', height: Math.abs(drag.a.y - drag.b.y) + 'px' });
+    }
+  }
+
+  async function ocrRegion(r, mx, my) {
+    const src = pages[curPage].canvas;
+    const scale = src.width / $('pageWrap').clientWidth;
+    const sx = Math.round(r.x * scale), sy = Math.round(r.y * scale);
+    const sw = Math.round(r.w * scale), sh = Math.round(r.h * scale);
+    // 小さい範囲は拡大し、周りに白い余白をつけると読み取りやすい
+    const up = sh < 60 ? 2 : 1;
+    const pad = 20;
+    const c = document.createElement('canvas');
+    c.width = sw * up + pad * 2; c.height = sh * up + pad * 2;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(src, sx, sy, sw, sh, pad, pad, sw * up, sh * up);
+
+    openPopup(mx, my);
+    $('selText').value = '読み取り中…';
+    try {
+      await getEngine();
+      const text = await runOnWorker(async (worker) => {
+        await worker.setParameters({ tessedit_pageseg_mode: '6' });
+        try { return (await worker.recognize(c)).data.text; }
+        finally { await worker.setParameters({ tessedit_pageseg_mode: '3' }); }
+      });
+      $('selText').value = window.Extractor.normLine(text.replace(/\n+/g, '  ')).replace(/\s{2,}/g, ' ');
+      $('selText').focus();
+      $('selText').select();
+    } catch (e) {
+      console.error(e);
+      $('selText').value = '読み取りに失敗しました';
+    }
+  }
+
+  function openPopup(mx, my) {
+    const pop = $('selPopup');
+    pop.hidden = false;
+    const w = pop.offsetWidth, h = pop.offsetHeight;
+    pop.style.left = Math.max(10, Math.min(window.innerWidth - w - 10, mx + 12)) + 'px';
+    pop.style.top = Math.max(10, Math.min(window.innerHeight - h - 10, my + 12)) + 'px';
+  }
+  function closePopup() { $('selPopup').hidden = true; $('selRect').hidden = true; }
+
+  function buildPopupFields() {
+    const root = $('selFields');
+    root.innerHTML = '';
+    for (const g of FIELD_GROUPS) {
+      root.append(el('div', { class: 'grp' }, g.title));
+      for (const [key, label] of g.fields) {
+        root.append(el('button', {
+          onclick: () => {
+            const v = $('selText').value.trim();
+            if (!v || v === '読み取り中…') return;
+            // 電話番号欄には番号だけを入れる
+            let val = v;
+            if (/TEL|FAX|電話|連絡先/.test(label)) {
+              const ph = window.Extractor.findPhones(window.Extractor.normLine(v));
+              if (ph.length) val = /FAX/.test(label) && ph[1] ? ph[ph.length - 1].num : ph[0].num;
+            }
+            setField(key, val, false);
+            fieldInputs[key].classList.add('auto');
+            setTimeout(() => fieldInputs[key].classList.remove('auto'), 900);
+            updateOutputs();
+            toast(`「${label}」に入れました`);
+          },
+        }, label));
+      }
+    }
+    root.append(el('div', { class: 'grp' }, 'その他'));
+    root.append(el('button', { onclick: () => { copyText($('selText').value.trim()); } }, '📋 この文字をコピー'));
+  }
+
+  // ================= 設定画面 =================
+  function openSettings() {
+    const ce = $('catEditor');
+    ce.innerHTML = '';
+    ce.append(el('div', { class: 'cat-row head' }, el('span', null, '項目名'), el('span', null, '出力の頭に付ける言葉'), el('span', null, '複数選択'), el('span', null, '選択肢（「、」区切り）'), el('span')));
+    const addCatRow = (c) => {
+      const row = el('div', { class: 'cat-row' },
+        el('input', { type: 'text', value: c.name, 'data-k': 'name' }),
+        el('input', { type: 'text', value: c.prefix || '', 'data-k': 'prefix', placeholder: '例：駐車場' }),
+        el('label', null, el('input', { type: 'checkbox', 'data-k': 'multi', checked: !!c.multi }), '可'),
+        el('input', { type: 'text', value: c.options.join('、'), 'data-k': 'options' }),
+        el('button', { class: 'x', title: '削除', onclick: () => row.remove() }, '×'));
+      ce.append(row);
+    };
+    settings.categories.forEach(addCatRow);
+    $('btnAddCat').onclick = () => addCatRow({ name: '', prefix: '', multi: false, options: [] });
+
+    $('setNotes').value = settings.notes.join('、');
+
+    const se = $('svcEditor');
+    se.innerHTML = '';
+    const addSvcRow = (s) => {
+      const row = el('div', { class: 'svc-row' },
+        el('input', { type: 'text', value: s.name, 'data-k': 'name', placeholder: '表示名' }),
+        el('input', { type: 'text', value: s.keywords.join('、'), 'data-k': 'keywords', placeholder: '読み取りキーワード' }),
+        el('button', { class: 'x', title: '削除', onclick: () => row.remove() }, '×'));
+      se.append(row);
+    };
+    settings.services.forEach(addSvcRow);
+    $('btnAddSvc').onclick = () => addSvcRow({ name: '', keywords: [] });
+
+    $('setSchedMode').value = settings.scheduleMode;
+    $('setSchedJoin').value = settings.scheduleJoin;
+    $('builtinCount').textContent = builtinMaster.length ? `組み込み済み ${builtinMaster.length}件（変更は管理者へ）＋` : '';
+    $('setMaster').value = masterToText(localMaster);
+    $('setSchedSep').value = settings.scheduleSep === '\n' ? '\\n' : ' ';
+    $('setItemSep').value = settings.itemSep;
+    $('setReportTpl').value = settings.reportTemplate;
+    $('setYakurekiTpl').value = settings.yakurekiTemplate;
+    $('phList').innerHTML = '';
+    for (const name of [...ALL_FIELDS.map(f => f[1]), ...EXTRA_PLACEHOLDERS]) $('phList').append(el('code', null, '{' + name + '}'));
+    $('settingsModal').hidden = false;
+  }
+
+  function readSettingsForm() {
+    const s = clone(settings);
+    s.categories = [...$('catEditor').querySelectorAll('.cat-row:not(.head)')].map(r => ({
+      name: r.querySelector('[data-k=name]').value.trim(),
+      prefix: r.querySelector('[data-k=prefix]').value.trim(),
+      multi: r.querySelector('[data-k=multi]').checked,
+      options: splitList(r.querySelector('[data-k=options]').value),
+    })).filter(c => c.name && c.options.length);
+    s.notes = splitList($('setNotes').value);
+    s.services = [...$('svcEditor').querySelectorAll('.svc-row')].map(r => ({
+      name: r.querySelector('[data-k=name]').value.trim(),
+      keywords: splitList(r.querySelector('[data-k=keywords]').value),
+    })).filter(x => x.name);
+    s.scheduleMode = $('setSchedMode').value;
+    s.scheduleJoin = $('setSchedJoin').value;
+    s.scheduleSep = $('setSchedSep').value === '\\n' ? '\n' : ' ';
+    s.itemSep = $('setItemSep').value;
+    s.reportTemplate = $('setReportTpl').value;
+    s.yakurekiTemplate = $('setYakurekiTpl').value;
+    s.localMaster = parseMasterText($('setMaster').value);
+    return s;
+  }
+
+  function applySettings(s) {
+    // 一覧（この端末で追加した分）は設定とは別に保存する
+    if (Array.isArray(s.localMaster)) {
+      localMaster = s.localMaster.map(cleanMasterRow).filter(r => r.kind && r.name);
+      saveLocalMaster();
+    }
+    delete s.localMaster;
+    buildStoreSelect();
+    refreshMasterSelects();
+    // サービスの並びが変わってもチェック済みのマスを名前で引き継ぐ
+    const prev = {};
+    settings.services.forEach((x, i) => { prev[x.name] = { on: sched[i], auto: schedAuto[i] }; });
+    settings = normalizeSettings(s);
+    saveSettings();
+    resetSchedule();
+    settings.services.forEach((x, i) => { if (prev[x.name]) { sched[i] = prev[x.name].on; schedAuto[i] = prev[x.name].auto; } });
+    buildSchedule(); buildChips(); updateOutputs();
+  }
+
+  function exportSettings() {
+    const blob = new Blob([JSON.stringify(readSettingsForm(), null, 2)], { type: 'application/json' });
+    // ※ localMaster（この端末で追加した一覧）も含めて書き出す → 読み込んだ端末で同じ一覧になる
+    const a = el('a', { href: URL.createObjectURL(blob), download: '頭書きツール設定.json' });
+    document.body.append(a); a.click(); a.remove();
+  }
+
+  // ================= クリア =================
+  function clearAll() {
+    if (!confirm('入力・読み取り内容をすべて消して、新しい患者さんの入力を始めますか？')) return;
+    for (const [key] of ALL_FIELDS) setField(key, '', false);
+    resetSchedule();
+    chipSel = {}; noteSel = new Set();
+    $('schedNote').value = ''; $('noteFree').value = '';
+    Object.values(masterSelects).forEach(s => { s.value = ''; });
+    document.querySelectorAll('datalist').forEach(d => { d.innerHTML = ''; });
+    if (HAS_OCR) {
+      pages.length = 0; curPage = 0;
+      $('fullText').value = '';
+      $('viewerArea').hidden = true;
+      $('dropzone').classList.remove('compact');
+      $('ocrStatus').hidden = true;
+      $('fileInput').value = '';
+      closePopup();
+    }
+    buildSchedule(); buildChips(); updateOutputs();
+    window.scrollTo(0, 0);
+  }
+
+  // ================= 初期化 =================
+  function init() {
+    document.body.classList.toggle('no-ocr', !HAS_OCR);
+    if (!HAS_OCR) {
+      // ポチポチ版：読み取りパネルを外し、見出しの番号を1から振り直す
+      $('viewerPanel').remove();
+      document.querySelectorAll('.form-panel h2 .num').forEach((n, i) => { n.textContent = String(i + 1); });
+      $('fieldsTitle').textContent = '基本情報を入力（一覧から選ぶ＋手入力）';
+    }
+    buildFields();
+    buildStoreSelect();
+    refreshMasterSelects();
+    buildSchedule();
+    buildChips();
+    updateOutputs();
+
+    $('storeSelect').addEventListener('change', (e) => {
+      currentStore = e.target.value;
+      try { localStorage.setItem(STORE_KEY, currentStore); } catch (err) { /* 記憶できなくても動作は続ける */ }
+      refreshMasterSelects();
+    });
+
+    if (HAS_OCR) {
+      buildPopupFields();
+      setupSelection();
+      $('fileInput').addEventListener('change', (e) => loadFiles(e.target.files));
+      const dz = $('dropzone');
+      window.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag'); });
+      window.addEventListener('dragleave', (e) => { if (!e.relatedTarget) dz.classList.remove('drag'); });
+      window.addEventListener('drop', (e) => { e.preventDefault(); dz.classList.remove('drag'); if (e.dataTransfer.files.length) loadFiles(e.dataTransfer.files); });
+      window.addEventListener('paste', (e) => {
+        const files = [...(e.clipboardData && e.clipboardData.files || [])].filter(f => /^image\//.test(f.type));
+        if (files.length) { e.preventDefault(); loadFiles(files); }
+      });
+      $('btnRotL').onclick = () => rotatePage(-1);
+      $('btnRotR').onclick = () => rotatePage(1);
+      $('btnZoomIn').onclick = () => { zoom = Math.min(4, zoom * 1.25); applyZoom(); };
+      $('btnZoomOut').onclick = () => { zoom = Math.max(0.5, zoom / 1.25); applyZoom(); };
+      $('btnReExtract').onclick = () => {
+        for (const k of [...autoFields]) setField(k, '', false);
+        applyExtraction();
+        toast('自動抽出をやり直しました');
+      };
+      $('selClose').onclick = closePopup;
+    }
+
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (HAS_OCR) closePopup(); $('settingsModal').hidden = true; $('helpModal').hidden = true; } });
+
+    $('schedNote').addEventListener('input', updateOutputs);
+    $('noteFree').addEventListener('input', updateOutputs);
+    document.querySelectorAll('[data-copy]').forEach(b => { b.onclick = () => copyText($(b.dataset.copy).value); });
+
+    $('btnClear').onclick = clearAll;
+    $('btnHelp').onclick = () => { $('helpModal').hidden = false; };
+    $('btnSettings').onclick = openSettings;
+    document.querySelectorAll('[data-close]').forEach(b => { b.onclick = () => { $(b.dataset.close).hidden = true; }; });
+    $('btnSaveSettings').onclick = () => { applySettings(readSettingsForm()); $('settingsModal').hidden = true; toast('設定を保存しました'); };
+    $('btnResetSettings').onclick = () => {
+      if (!confirm('選択肢・書式を初期設定に戻しますか？')) return;
+      applySettings(clone(DEFAULT_SETTINGS)); openSettings();
+    };
+    $('btnExport').onclick = exportSettings;
+    $('importInput').addEventListener('change', async (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      try {
+        applySettings(JSON.parse(await f.text()));
+        openSettings();
+        toast('設定ファイルを読み込みました');
+      } catch (err) {
+        alert('設定ファイルを読み込めませんでした：' + err.message);
+      }
+      e.target.value = '';
+    });
+  }
+
+  init();
+})();
+
+</script>
+</body>
+</html>
