@@ -239,6 +239,40 @@ body { padding-bottom: 64px; }
   .sched th { padding: 6px 8px; }
 }
 
+/* ===== v3：連絡先・追加入力・必須 ===== */
+.contacts-box { margin-bottom: 12px; }
+.contact-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1.1fr) 30px 56px 26px; gap: 6px; align-items: center; margin: 4px 0; }
+.contact-row input { width: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; background: #fff; min-width: 0; }
+.contact-row input.auto { background: var(--auto); border-color: var(--auto-line); }
+.contact-row input.warn { border-color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); }
+.kp-btn { border: 1px solid var(--line); background: var(--chip); border-radius: 999px; font-size: 12px; padding: 3px 6px; cursor: pointer; white-space: nowrap; }
+.kp-btn.on { background: #f2c94c; border-color: #d4a514; font-weight: bold; }
+.contacts-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+@media (max-width: 640px) {
+  .contact-row { grid-template-columns: 90px minmax(0, 1fr) 30px 56px 26px; }
+  .contact-row input:nth-child(2) { display: none; }
+}
+
+.cgroup-body { min-width: 0; }
+.extra-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.extra-row input { flex: 1; min-width: 180px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 4px; }
+.extra-row input.need { border-color: var(--danger); background: #fdf0ef; }
+.req { background: var(--danger); color: #fff; font-size: 10px; padding: 0 5px; border-radius: 3px; margin-left: 4px; font-weight: normal; }
+.visit-tel { margin-top: 6px; padding: 6px 10px; border-left: 4px solid var(--accent); background: var(--accent-soft); font-size: 13px; white-space: pre-line; }
+.visit-tel.empty { border-left-color: var(--danger); background: #fdf0ef; color: var(--danger); }
+
+.sched-extra textarea, .note-free textarea { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; margin-top: 2px; resize: vertical; }
+.out-head small { flex: 1; margin-left: 4px; }
+.cat-row { grid-template-columns: 100px 100px 60px minmax(0, 1fr) 90px 32px; }
+.cat-row select { padding: 4px; }
+
+@media (pointer: coarse) {
+  .contact-row { grid-template-columns: 100px minmax(0, 1fr) minmax(0, 1.1fr) 40px 60px 32px; }
+  .contact-row input { min-height: 40px; }
+  .kp-btn { min-height: 36px; font-size: 13px; }
+  .extra-row input { min-height: 40px; }
+}
+
 </style>
 </head>
 <body>
@@ -303,7 +337,15 @@ body { padding-bottom: 64px; }
 
   <!-- 右：入力・選択・出力 -->
   <section class="panel form-panel">
-    <h2><span class="num">2</span><span id="fieldsTitle">抽出結果を確認・修正</span> <small class="legend"><span class="ocr-only"><span class="auto-chip">黄色</span>＝自動で読み取った欄（必ず原本と見比べてください）／</span><span class="warn-chip">赤枠</span>＝電話番号の桁数が合わない</small></h2>
+    <h2><span class="num">2</span>連絡先・ケアマネ・訪看 <small class="legend"><span class="ocr-only"><span class="auto-chip">黄色</span>＝自動で読み取った欄（必ず原本と見比べてください）／</span><span class="warn-chip">赤枠</span>＝電話番号の桁数が合わない</small></h2>
+    <div class="fgroup contacts-box">
+      <h3>📞 連絡先（自宅・KP・家族など）</h3>
+      <div id="contacts"></div>
+      <div class="contacts-foot">
+        <button class="btn small" id="btnAddContact">＋ 連絡先を追加</button>
+        <span class="hint">☆KP を押した人がキーパーソン（★KP）になります</span>
+      </div>
+    </div>
     <div id="fieldGroups" class="field-groups"></div>
 
     <h2><span class="num">3</span>週間スケジュール <small class="legend">マスをタップでON/OFF</small></h2>
@@ -311,38 +353,38 @@ body { padding-bottom: 64px; }
       <table class="sched" id="schedTable"></table>
     </div>
     <div class="sched-extra">
-      <label>スケジュール補足（月1回・隔週など）
-        <input type="text" id="schedNote" placeholder="例：訪問診療 第2・4水曜">
+      <label>スケジュール補足（月1回・隔週など。改行して何行でも書けます）
+        <textarea id="schedNote" rows="3" placeholder="例：訪問診療 第2・4水曜&#10;ショートステイ 月末に1週間"></textarea>
       </label>
     </div>
 
-    <h2><span class="num">4</span>頭書き項目をポチポチ選ぶ</h2>
+    <h2><span class="num">4</span>頭書き項目をポチポチ選ぶ <small class="legend">→頭書き／→患者メモ は出力先</small></h2>
     <div id="chipGroups" class="chip-groups"></div>
     <div class="note-free">
-      <label>特記事項（自由入力）
-        <input type="text" id="noteFree" placeholder="例：エンシュアはバニラ味が好き">
+      <label>特記事項（自由入力。改行して何行でも書けます）
+        <textarea id="noteFree" rows="3" placeholder="例：玄関は裏口から&#10;犬がいるので声をかけてから入る"></textarea>
       </label>
     </div>
 
     <h2><span class="num">5</span>コピーして貼り付け</h2>
     <div class="outputs">
       <div class="out-box">
-        <div class="out-head"><b>報告書 初期登録用</b><button class="btn primary" data-copy="outReport">📋 まとめてコピー</button></div>
-        <textarea id="outReport" rows="18" spellcheck="false"></textarea>
+        <div class="out-head"><b>頭書き用</b><small class="hint">調剤に必要な情報</small><button class="btn primary" data-copy="atama">📋 コピー</button></div>
+        <textarea id="outAtama" rows="12" spellcheck="false"></textarea>
       </div>
       <div class="out-box">
-        <div class="out-head"><b>薬歴 頭書き用</b><button class="btn primary" data-copy="outYakureki">📋 まとめてコピー</button></div>
-        <textarea id="outYakureki" rows="18" spellcheck="false"></textarea>
+        <div class="out-head"><b>患者メモ用</b><small class="hint">訪問に必要な情報</small><button class="btn primary" data-copy="memo">📋 コピー</button></div>
+        <textarea id="outMemo" rows="12" spellcheck="false"></textarea>
       </div>
     </div>
-    <p class="hint">※ 枠の中は直接書き換えてからコピーしてもOKです（上の欄を変えると作り直されます）。選んでいない項目・空欄は薬歴頭書きに出ません。</p>
+    <p class="hint">※ 枠の中は直接書き換えてからコピーしてもOKです（上の欄を変えると作り直されます）。選んでいない項目・空欄は出ません。<b>「必須」の欄が空だとコピーできません。</b></p>
   </section>
 </main>
 
 <!-- 画面下にいつも出しておくコピーボタン（iPadで下までスクロールしなくて済むように） -->
 <div class="copybar">
-  <button class="btn primary" data-copy="outYakureki">📋 薬歴頭書きをコピー</button>
-  <button class="btn" data-copy="outReport">📋 報告書用をコピー</button>
+  <button class="btn primary" data-copy="atama">📋 頭書きをコピー</button>
+  <button class="btn primary" data-copy="memo">📋 患者メモをコピー</button>
 </div>
 
 <!-- 範囲読み取りポップアップ -->
@@ -359,12 +401,13 @@ body { padding-bottom: 64px; }
     <div class="modal-head"><h3>⚙️ 設定</h3><button class="x" data-close="settingsModal">×</button></div>
     <p class="hint">設定はこの端末のブラウザに保存されます。「設定ファイルに保存」で他の人・他の端末に配れます。</p>
 
-    <h4>医療機関・ケアマネ事業所・訪看事業所の一覧（プルダウンの中身）</h4>
-    <p class="hint"><span id="builtinCount"></span>この端末で追加した分。1行1件で「区分 → 店舗 → 名称 → TEL → FAX → 担当者候補」の順。Excelで6列の表を作り、範囲をコピーしてここに貼り付けられます。<br>
-      区分は「医療機関」「居宅」「訪看」のどれか。店舗が空欄なら全店に表示。担当者候補は「、」区切り（任意）。</p>
-    <textarea id="setMaster" rows="6" spellcheck="false" placeholder="例）医療機関	A店	○○クリニック	047-000-0000	047-000-0001	△△先生、□□先生"></textarea>
+    <h4>ケアマネ事業所・訪看事業所の一覧（プルダウンの中身）</h4>
+    <p class="hint"><span id="builtinCount"></span>この端末で追加した分。1行1件で「区分 → 店舗 → 事業所名称 → TEL → （空欄）→ 担当者候補」の順。Excelで6列の表を作り、範囲をコピーしてここに貼り付けられます。<br>
+      区分は「居宅」か「訪看」。店舗が空欄なら全店に表示。5列目（FAX）は使わないので空欄でOK。担当者候補は「、」区切り（任意）。</p>
+    <textarea id="setMaster" rows="6" spellcheck="false" placeholder="例）居宅	A店	ケアプラン○○	047-000-0000		山田、佐藤"></textarea>
 
     <h4>頭書き項目（ポチポチの選択肢）</h4>
+    <p class="hint">出力先：「頭書き」＝調剤に必要な情報／「患者メモ」＝訪問に必要な情報。番号や味などの入力欄（必須）は、選択肢の名前を変えなければそのまま残ります。</p>
     <div id="catEditor"></div>
     <button class="btn small" id="btnAddCat">＋ 項目を追加</button>
     <h4>特記事項のよく使う言葉（「、」区切り）</h4>
@@ -388,14 +431,14 @@ body { padding-bottom: 64px; }
         <input type="text" id="setItemSep" maxlength="3">
       </label>
     </div>
-    <p class="hint">サービス（表の行）：表示名がそのまま頭書きに出ます（例：デイ、訪看）。<span class="ocr-only">右の欄は計画書の読み取りで使うキーワードです。</span></p>
+    <p class="hint">サービス（表の行）：表示名がそのまま出力に出ます（例：デイ、訪看）。<span class="ocr-only">右の欄は計画書の読み取りで使うキーワードです。</span></p>
     <div id="svcEditor"></div>
     <button class="btn small" id="btnAddSvc">＋ サービスを追加</button>
 
     <h4>出力の書式</h4>
-    <p class="hint">{患者氏名} などの{ }に値が入ります。<b>[ ]で囲んだ部分は、中の値が全部空なら丸ごと省略</b>されます。使える名前：<span id="phList"></span></p>
-    <label>報告書 初期登録用<textarea id="setReportTpl" rows="10" spellcheck="false"></textarea></label>
-    <label>薬歴 頭書き用<textarea id="setYakurekiTpl" rows="10" spellcheck="false"></textarea></label>
+    <p class="hint">{ケアマネ事業所} などの{ }に値が入ります。<b>[ ]で囲んだ部分は、中の値が全部空なら丸ごと省略</b>されます。使える名前：<span id="phList"></span></p>
+    <label>頭書き用<textarea id="setAtamaTpl" rows="4" spellcheck="false"></textarea></label>
+    <label>患者メモ用<textarea id="setMemoTpl" rows="10" spellcheck="false"></textarea></label>
     <div class="modal-actions">
       <button class="btn" id="btnExport">💾 設定ファイルに保存</button>
       <label class="btn">📂 設定ファイルを読み込む<input type="file" id="importInput" accept=".json,application/json" hidden></label>
@@ -413,17 +456,18 @@ body { padding-bottom: 64px; }
     <ol class="help">
       <li class="ocr-only"><b>計画書を読み込む</b>：PDFやスマホで撮った写真をドラッグ（またはクリックで選択）。自動で読み取りが始まります（1ページ10秒前後）。</li>
       <li class="ocr-only"><b>抽出結果を確認</b>：黄色の欄は自動で入った値です。<b>必ず原本と見比べて</b>直してください。読めていない欄は、左の画像をマウスで囲むとその部分だけ読み取れます。</li>
-      <li><b>医療機関・事業所は一覧から選ぶ</b>：プルダウンで選ぶと名称・TEL・FAXが入ります。担当医・ケアマネ・訪看の担当者名は手入力。一覧にない所は手入力して「＋一覧に追加」でこの端末に登録できます。</li>
-      <li><b>スケジュール</b>：曜日×サービスのマスをタップ。書き方（曜日ごと／サービスごと）は「⚙️ 設定」で切り替えられます。</li>
-      <li><b>頭書き項目</b>：一包化・管理方法などをポチポチ選ぶ。もう一度押すと解除。</li>
-      <li><b>コピー</b>：画面下の「📋 薬歴頭書きをコピー」→ 電子薬歴に貼り付け。各欄の 📋 で1項目ずつコピーもできます。</li>
+      <li><b>連絡先</b>：自宅・KP・家族などの電話番号を入力。「＋連絡先を追加」で何件でも。☆KPを押した人がキーパーソンになります。</li>
+      <li><b>ケアマネ・訪看</b>：事業所を一覧から選ぶと名称・TELが入ります。担当者名は手入力。一覧にない所は手入力して「＋一覧に追加」でこの端末に登録できます。</li>
+      <li><b>スケジュール</b>：曜日×サービスのマスをタップ。補足は何行でも書けます。書き方（曜日ごと／サービスごと）は「⚙️ 設定」で切り替え。</li>
+      <li><b>頭書き項目</b>：ポチポチ選ぶ。もう一度押すと解除。一部一包化・経腸用液あり・キーボックスあり・駐車場その他を選ぶと入力欄が出ます（「必須」は入力しないとコピーできません）。訪問前TEL「必要」なら、連絡先が患者メモの一番上に出ます。</li>
+      <li><b>コピー</b>：画面下の「📋 頭書きをコピー」「📋 患者メモをコピー」→ 電子薬歴に貼り付け。</li>
       <li>次の患者さんは右上の「新しい患者」で全部消してから。</li>
     </ol>
     <p class="hint lite-only">・iPadでは、Safariの共有ボタン →「ホーム画面に追加」でアプリのように開けます。<br>
     ・店舗を選ぶと、その店舗の一覧（＋全店共通）だけがプルダウンに出ます。</p>
     <p class="hint ocr-only">・読み取り精度はスキャンのきれいさで変わります。FAXのかすれ・手書き・斜めの写真は苦手です。<br>
     ・計画書に書かれていない項目（電話番号など）は空欄になります。</p>
-    <p class="hint">・選択肢や出力の書式は「⚙️ 設定」で自由に変えられます。</p>
+    <p class="hint">・選択肢・出力先・出力の書式は「⚙️ 設定」で変えられます。</p>
     <details class="licenses ocr-only">
       <summary>使用している部品とライセンス</summary>
       <ul class="hint">
@@ -740,22 +784,30 @@ window.__MASTER=[];
   const LOCAL_MASTER_KEY = 'zaitaku-atamagaki-master-local';
   const STORE_KEY = 'zaitaku-atamagaki-store';
   const HAS_OCR = typeof window.Tesseract !== 'undefined';
+  const DEST_LABEL = { atama: '頭書き', memo: '患者メモ' };
   const DEFAULT_SETTINGS = {
-    version: 2,
+    version: 3,
+    // dest … 出力先（atama＝頭書き：調剤に必要 ／ memo＝患者メモ：訪問に必要）
+    // extras … その選択肢を選んだときに出す入力欄。format の {値} に入力内容が入る。required は未入力だとコピーできない
     categories: [
-      { name: '調剤', prefix: '', multi: false, options: ['一包化', 'ヒート', '一部一包化'] },
-      { name: '管理方法', prefix: '', multi: true, options: ['薬袋管理', 'カレンダー管理', '自宅でカレンダーセット', 'BOX管理', 'ロボ'] },
-      { name: '支払い', prefix: '', multi: false, options: ['リコーリース', '現金'] },
-      { name: '訪問前TEL', prefix: '訪問前TEL', multi: false, options: ['必要', '不要'] },
-      { name: '処方せん', prefix: '処方せん', multi: false, options: ['原本回収', '病院から送付'] },
-      { name: '駐車場', prefix: '駐車場', multi: false, options: ['有', '無'] },
+      { name: '調剤', prefix: '', multi: false, dest: 'atama', options: ['一包化', 'ヒート', '一部一包化'],
+        extras: { '一部一包化': { label: 'ヒート調剤の薬', required: false, format: '一部一包化（ヒート：{値}）', placeholder: '例：マグミット錠、頓服' } } },
+      { name: '管理方法', prefix: '', multi: true, dest: 'atama', options: ['薬袋管理', 'カレンダー管理', '自宅でカレンダーセット', 'BOX管理', 'ロボ'] },
+      { name: '経腸用液', prefix: '経腸用液', multi: false, dest: 'atama', options: ['なし', 'あり'],
+        extras: { 'あり': { label: '製品名・味', required: true, format: '経腸用液あり（{値}）', placeholder: '例：エンシュアH バニラ／イノラス いちご' } } },
+      { name: '処方せん', prefix: '処方せん', multi: false, dest: 'atama', options: ['原本回収', '病院から送付'] },
+      { name: '訪問前TEL', prefix: '訪問前TEL', multi: false, dest: 'memo', options: ['必要', '不要'], special: 'visitTel' },
+      { name: '支払い', prefix: '', multi: false, dest: 'memo', options: ['リコーリース', '現金'] },
+      { name: '駐車場', prefix: '', multi: false, dest: 'memo', options: ['自宅Pあり', '近隣に有料Pあり', 'その他'],
+        extras: { 'その他': { label: '駐車場（その他）', required: true, format: '駐車場：{値}', placeholder: '例：近くのコンビニに停めてよいと許可あり' } } },
+      { name: 'キーボックス', prefix: 'キーボックス', multi: false, dest: 'memo', options: ['なし', 'あり'],
+        extras: { 'あり': { label: 'キーボックス番号', required: true, format: 'キーボックスあり（番号：{値}）', placeholder: '例：1234' } } },
     ],
-    notes: ['タバコ臭い', 'エンシュアの味', 'ペットあり', '耳が遠い', '鍵はキーボックス'],
+    notes: ['タバコ臭い', 'ペットあり', '耳が遠い'],
     services: [
       { name: '訪看', keywords: ['訪問看護', '訪看'] },
       { name: 'ヘルパー', keywords: ['訪問介護', 'ヘルパー', '身体介護', '生活援助'] },
-      { name: 'デイ', keywords: ['通所介護', 'デイサービス'] },
-      { name: 'デイケア', keywords: ['通所リハ', 'デイケア'] },
+      { name: 'デイ', keywords: ['通所介護', 'デイサービス', '通所リハ', 'デイケア'] },
       { name: '訪問入浴', keywords: ['訪問入浴'] },
       { name: '訪問リハ', keywords: ['訪問リハ'] },
       { name: '訪問診療', keywords: ['訪問診療', '往診'] },
@@ -767,52 +819,32 @@ window.__MASTER=[];
     scheduleJoin: '/',
     scheduleSep: '\n',
     itemSep: '／',
-    reportTemplate: [
-      '患者氏名：{患者氏名}',
-      '患者電話：{患者電話}',
-      '患者住所：{患者住所}',
-      'ＫＰ：{KP氏名}（続柄：{続柄}）ＫＰ連絡先：{KP連絡先}',
-      '',
-      '医療機関名称：{医療機関名称}',
-      '担当医名：{担当医名}',
-      '医療機関連絡先・ＦＡＸ：{医療機関TEL}[／{医療機関FAX}]',
-      '',
-      'ケアマネ氏名：{ケアマネ氏名}',
-      'ケアマネ電話：{ケアマネ電話}',
-      '事業所名称：{事業所名称}',
-      '事業所連絡先・ＦＡＸ：{事業所TEL}[／{事業所FAX}]',
-      '',
-      '担当訪看名：{担当訪看名}',
-      '担当訪看電話：{担当訪看電話}',
-      '訪看事業所名称：{訪看事業所名称}',
-      '訪看事業所連絡先・ＦＡＸ：{訪看事業所TEL}[／{訪看事業所FAX}]',
-    ].join('\n'),
-    yakurekiTemplate: [
-      '[【KP】{KP氏名}[（{続柄}）][ {KP連絡先}]',
-      '][【主治医】{医療機関名称}[ {担当医名}先生][ TEL {医療機関TEL}][ FAX {医療機関FAX}]',
-      '][【CM】{事業所名称}[ {ケアマネ氏名}][ TEL {事業所TEL}][ FAX {事業所FAX}]',
-      '][【訪看】{訪看事業所名称}[ {担当訪看名}][ TEL {訪看事業所TEL}][ FAX {訪看事業所FAX}]',
+    atamaTemplate: '{頭書き項目}',
+    memoTemplate: [
+      '[{訪問前TEL}',
+      '][【連絡先】',
+      '{連絡先}',
+      '][【CM】{ケアマネ事業所}[ {ケアマネ氏名}][ TEL {ケアマネ事業所TEL}][ 携帯 {ケアマネ携帯}]',
+      '][【訪看】{訪看事業所}[ {担当訪看}][ TEL {訪看事業所TEL}][ 携帯 {訪看携帯}]',
       '][【スケジュール】',
       '{スケジュール}',
-      '][{頭書き項目}',
+      '][{患者メモ項目}',
       '][特記：{特記事項}]',
     ].join('\n'),
   };
 
+  // [内部キー, 書式で使う名前, 画面の表示名]
   const FIELD_GROUPS = [
-    { title: '👤 患者', fields: [['patientName', '患者氏名'], ['patientTel', '患者電話'], ['patientAddr', '患者住所']] },
-    { title: '👪 KP（キーパーソン）', fields: [['kpName', 'KP氏名'], ['kpRel', '続柄'], ['kpTel', 'KP連絡先']] },
-    { title: '🏥 医療機関', fields: [['hospName', '医療機関名称'], ['doctor', '担当医名'], ['hospTel', '医療機関TEL'], ['hospFax', '医療機関FAX']],
-      master: { kind: '医療機関', name: 'hospName', tel: 'hospTel', fax: 'hospFax', staff: 'doctor' } },
-    { title: '📋 ケアマネ', fields: [['cmName', 'ケアマネ氏名'], ['cmTel', 'ケアマネ電話'], ['cmOffice', '事業所名称'], ['cmOfficeTel', '事業所TEL'], ['cmOfficeFax', '事業所FAX']],
-      master: { kind: '居宅', name: 'cmOffice', tel: 'cmOfficeTel', fax: 'cmOfficeFax', staff: 'cmName', staffTel: 'cmTel' } },
-    { title: '🩺 訪問看護', fields: [['nsName', '担当訪看名'], ['nsTel', '担当訪看電話'], ['nsOffice', '訪看事業所名称'], ['nsOfficeTel', '訪看事業所TEL'], ['nsOfficeFax', '訪看事業所FAX']],
-      master: { kind: '訪看', name: 'nsOffice', tel: 'nsOfficeTel', fax: 'nsOfficeFax', staff: 'nsName', staffTel: 'nsTel' } },
+    { title: '📋 ケアマネ', fields: [['cmOffice', 'ケアマネ事業所', '事業所名称'], ['cmOfficeTel', 'ケアマネ事業所TEL', '事業所TEL'], ['cmName', 'ケアマネ氏名', 'ケアマネ氏名'], ['cmMobile', 'ケアマネ携帯', '携帯（任意）']],
+      master: { kind: '居宅', name: 'cmOffice', tel: 'cmOfficeTel', staff: 'cmName' } },
+    { title: '🩺 訪問看護', fields: [['nsOffice', '訪看事業所', '事業所名称'], ['nsOfficeTel', '訪看事業所TEL', '事業所TEL'], ['nsName', '担当訪看', '担当者名'], ['nsMobile', '訪看携帯', '携帯（任意）']],
+      master: { kind: '訪看', name: 'nsOffice', tel: 'nsOfficeTel', staff: 'nsName' } },
   ];
   const masterSelects = {};
   const ALL_FIELDS = FIELD_GROUPS.flatMap(g => g.fields);
-  const EXTRA_PLACEHOLDERS = ['スケジュール', '頭書き項目', '特記事項'];
+  const EXTRA_PLACEHOLDERS = ['訪問前TEL', '連絡先', 'スケジュール', '頭書き項目', '患者メモ項目', '特記事項'];
   const DAYS = ['月', '火', '水', '木', '金', '土', '日'];
+  const REL_OPTIONS = ['自宅', '本人携帯', '長男', '長女', '次男', '次女', '妻', '夫', '息子', '娘', '嫁', '孫', '兄弟姉妹', '施設', 'その他'];
 
   // ================= ユーティリティ =================
   const $ = (id) => document.getElementById(id);
@@ -834,7 +866,7 @@ window.__MASTER=[];
     const t = $('toast');
     t.textContent = msg; t.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { t.hidden = true; }, 1800);
+    toastTimer = setTimeout(() => { t.hidden = true; }, 2200);
   }
 
   async function copyText(text) {
@@ -887,19 +919,34 @@ window.__MASTER=[];
   function normalizeSettings(s) {
     const d = clone(DEFAULT_SETTINGS);
     if (!s || typeof s !== 'object') return d;
-    for (const k of Object.keys(d)) if (s[k] !== undefined) d[k] = s[k];
-    d.services = (d.services || []).map(x => ({ name: x.name, keywords: Array.isArray(x.keywords) ? x.keywords : splitList(String(x.keywords || '')) }));
-    // v1で保存された設定には「訪問不可」が無いので足す
-    if ((s.version || 1) < 2) {
-      if (!d.services.some(x => x.name === '訪問不可')) d.services.push({ name: '訪問不可', keywords: [] });
-      d.version = 2;
+    const ver = s.version || 1;
+    if (ver < 3) {
+      // v3で項目・出力の構成を作り直したため、選択肢と書式は新しい既定値を使う（スケジュールの設定だけ引き継ぐ）
+      for (const k of ['scheduleMode', 'scheduleJoin', 'scheduleSep', 'itemSep']) if (s[k] !== undefined) d[k] = s[k];
+      if (Array.isArray(s.services)) {
+        // デイケアはデイに統合（読み取りキーワードもデイへ）
+        const care = s.services.find(x => x.name === 'デイケア');
+        d.services = s.services.filter(x => x.name !== 'デイケア');
+        const day = d.services.find(x => x.name === 'デイ');
+        if (care && day) day.keywords = [...new Set([...(day.keywords || []), ...(care.keywords || []), '通所リハ', 'デイケア'])];
+        if (!d.services.some(x => x.name === '訪問不可')) d.services.push({ name: '訪問不可', keywords: [] });
+      }
+    } else {
+      for (const k of Object.keys(d)) if (s[k] !== undefined) d[k] = s[k];
     }
+    d.version = 3;
+    d.services = (d.services || []).map(x => ({ name: x.name, keywords: Array.isArray(x.keywords) ? x.keywords : splitList(String(x.keywords || '')) }));
+    d.categories = (d.categories || []).map(c => ({ prefix: '', multi: false, dest: 'atama', extras: {}, ...c }));
     return d;
   }
+  function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* 保存できなくても動作は続ける */ }
+    window.__SERVICES = settings.services;
+  }
+  window.__SERVICES = settings.services;
 
-  // ================= 医療機関・事業所の一覧（プルダウン） =================
+  // ================= ケアマネ・訪看事業所の一覧（プルダウン） =================
   // 組み込み分（master.csv → ビルド時に埋め込み）＋ この端末で追加した分
-  const MASTER_KINDS = { hosp: '医療機関', cm: '居宅', ns: '訪看' };
   function normalizeKind(k) {
     k = String(k || '').trim();
     if (/医療|病院|クリニック|医院|診療所|Dr/.test(k)) return '医療機関';
@@ -923,7 +970,7 @@ window.__MASTER=[];
   function saveLocalMaster() {
     try { localStorage.setItem(LOCAL_MASTER_KEY, JSON.stringify(localMaster)); } catch (e) { /* 保存できなくても動作は続ける */ }
   }
-  // Excelからの貼り付け（タブ区切り）やCSVの行を読む：区分, 店舗, 名称, TEL, FAX, 担当者候補
+  // Excelからの貼り付け（タブ区切り）やCSVの行を読む：区分, 店舗, 名称, TEL, FAX(使わない・空欄可), 担当者候補
   function parseMasterText(text) {
     return text.split(/\r?\n/).map(line => {
       const c = line.includes('\t') ? line.split('\t') : line.split(',');
@@ -941,30 +988,61 @@ window.__MASTER=[];
     return allMaster().filter(r => r.kind === kind && (!currentStore || !r.store || r.store === currentStore))
       .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
   }
-  function saveSettings() {
-    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* 保存できなくても動作は続ける */ }
-    window.__SERVICES = settings.services;
-  }
-  window.__SERVICES = settings.services;
 
   // ================= 状態 =================
   const fieldInputs = {};
   const autoFields = new Set();
+  let contacts = [];       // { rel, name, tel, kp }
   let sched = [];          // sched[サービス][曜日] = 0/1
   let schedAuto = [];      // 自動でONになったマス
   let chipSel = {};        // カテゴリ名 → Set(選択肢)
+  let extraVals = {};      // 'カテゴリ名|選択肢' → 追加入力の値
   let noteSel = new Set();
   const pages = [];        // { canvas, text, status }
   let curPage = 0;
   let zoom = 1;
 
+  function resetContacts() {
+    contacts = [{ rel: '自宅', name: '', tel: '', kp: false }, { rel: '', name: '', tel: '', kp: true }];
+  }
+  resetContacts();
   function resetSchedule() {
     sched = settings.services.map(() => DAYS.map(() => 0));
     schedAuto = settings.services.map(() => DAYS.map(() => 0));
   }
   resetSchedule();
 
-  // ================= 抽出結果フォーム =================
+  // ================= ① 連絡先 =================
+  function buildContacts() {
+    const root = $('contacts');
+    root.innerHTML = '';
+    contacts.forEach((c, i) => {
+      const relIn = el('input', { type: 'text', value: c.rel, list: 'relOptions', placeholder: '続柄など', 'aria-label': '続柄' });
+      const nameIn = el('input', { type: 'text', value: c.name, placeholder: '氏名（任意）', 'aria-label': '氏名' });
+      const telIn = el('input', { type: 'tel', value: c.tel, placeholder: '電話番号', 'aria-label': '電話番号', class: 'c-tel' });
+      relIn.addEventListener('input', () => { c.rel = relIn.value; updateOutputs(); });
+      nameIn.addEventListener('input', () => { c.name = nameIn.value; updateOutputs(); });
+      telIn.addEventListener('input', () => { c.tel = telIn.value; telIn.classList.remove('auto'); updateOutputs(); });
+      if (c.auto) telIn.classList.add('auto');
+      const kpBtn = el('button', {
+        class: 'kp-btn' + (c.kp ? ' on' : ''), title: 'KP（キーパーソン）にする',
+        onclick: () => { const on = !c.kp; contacts.forEach(x => { x.kp = false; }); c.kp = on; buildContacts(); updateOutputs(); },
+      }, c.kp ? '★KP' : '☆KP');
+      const del = el('button', { class: 'x', title: 'この行を消す', onclick: () => { contacts.splice(i, 1); if (!contacts.length) resetContacts(); buildContacts(); updateOutputs(); } }, '×');
+      root.append(el('div', { class: 'contact-row' }, relIn, nameIn, telIn,
+        el('button', { class: 'copy1', title: '電話番号をコピー', onclick: () => c.tel && copyText(c.tel) }, '📋'), kpBtn, del));
+    });
+    checkPhones();
+  }
+
+  function contactLines() {
+    return contacts.filter(c => c.tel.trim() || c.name.trim()).map(c => {
+      const who = [c.rel.trim(), c.name.trim()].filter(Boolean).join(' ');
+      return (c.kp ? '★KP ' : '') + (who || '連絡先') + (c.tel.trim() ? '：' + c.tel.trim() : '');
+    });
+  }
+
+  // ================= ① ケアマネ・訪看 =================
   function buildFields() {
     const root = $('fieldGroups');
     root.innerHTML = '';
@@ -975,13 +1053,13 @@ window.__MASTER=[];
         sel.addEventListener('change', () => pickMaster(g.master, sel.value));
         masterSelects[g.master.kind] = sel;
         box.append(el('div', { class: 'master-row' }, sel,
-          el('button', { class: 'btn small', title: '下に入力した名称・TEL・FAXを、この端末の一覧に追加します', onclick: () => addToMaster(g.master) }, '＋一覧に追加')));
+          el('button', { class: 'btn small', title: '下に入力した事業所名称・TELを、この端末の一覧に追加します', onclick: () => addToMaster(g.master) }, '＋一覧に追加')));
         box.append(el('datalist', { id: 'staff_' + g.master.staff }));
       }
-      for (const [key, label] of g.fields) {
+      for (const [key, , label] of g.fields) {
         const id = 'f_' + key;
         const isStaff = g.master && g.master.staff === key;
-        const input = el('input', { type: 'text', id, autocomplete: 'off', list: isStaff ? 'staff_' + key : null, placeholder: isStaff ? '手入力（候補があれば表示）' : null });
+        const input = el('input', { type: /TEL|携帯/.test(label) ? 'tel' : 'text', id, autocomplete: 'off', list: isStaff ? 'staff_' + key : null, placeholder: isStaff ? '手入力（候補があれば表示）' : null });
         input.addEventListener('input', () => { autoFields.delete(key); input.classList.remove('auto'); updateOutputs(); });
         fieldInputs[key] = input;
         box.append(el('div', { class: 'frow' },
@@ -1010,16 +1088,13 @@ window.__MASTER=[];
   function pickMaster(m, value) {
     const sel = masterSelects[m.kind];
     if (value === '' || value === '__manual') {
-      if (value === '__manual') { for (const k of [m.name, m.tel, m.fax]) setField(k, '', false); fieldInputs[m.name].focus(); updateOutputs(); }
+      if (value === '__manual') { for (const k of [m.name, m.tel]) setField(k, '', false); fieldInputs[m.name].focus(); updateOutputs(); }
       return;
     }
     const r = sel._rows[Number(value)];
     if (!r) return;
     setField(m.name, r.name, false);
     setField(m.tel, r.tel, false);
-    setField(m.fax, r.fax, false);
-    // ケアマネ・訪看の電話は事業所の番号と同じことが多いので、空なら入れておく
-    if (m.staffTel && !fieldInputs[m.staffTel].value) setField(m.staffTel, r.tel, false);
     const dl = $('staff_' + m.staff);
     dl.innerHTML = '';
     r.staff.forEach(s => dl.append(el('option', { value: s })));
@@ -1028,8 +1103,8 @@ window.__MASTER=[];
   }
 
   function addToMaster(m) {
-    const row = cleanMasterRow({ kind: m.kind, store: currentStore, name: fieldInputs[m.name].value, tel: fieldInputs[m.tel].value, fax: fieldInputs[m.fax].value });
-    if (!row.name) { toast('先に下の欄に名称を入力してください'); return; }
+    const row = cleanMasterRow({ kind: m.kind, store: currentStore, name: fieldInputs[m.name].value, tel: fieldInputs[m.tel].value });
+    if (!row.name) { toast('先に下の欄に事業所名称を入力してください'); return; }
     if (allMaster().some(r => r.kind === row.kind && r.name === row.name && (r.store || '') === row.store)) { toast('すでに一覧にあります'); return; }
     localMaster.push(row);
     saveLocalMaster();
@@ -1056,6 +1131,7 @@ window.__MASTER=[];
     if (isAuto) autoFields.add(key); else autoFields.delete(key);
   }
 
+  // 読み取り付き版：計画書の全文から拾えた分を入れる（手で直した欄は上書きしない）
   function applyExtraction() {
     const text = $('fullText').value;
     if (!text.trim()) return;
@@ -1065,6 +1141,17 @@ window.__MASTER=[];
       const canOverwrite = !input.value || autoFields.has(key);
       if (fields[key] && canOverwrite) setField(key, fields[key], true);
     }
+    // KP・自宅の電話は連絡先の行へ
+    if (fields.kpTel || fields.kpName) {
+      let kp = contacts.find(c => c.kp);
+      if (!kp) { kp = { rel: '', name: '', tel: '', kp: true }; contacts.push(kp); }
+      if (!kp.tel && !kp.name) Object.assign(kp, { rel: fields.kpRel || kp.rel, name: fields.kpName || '', tel: fields.kpTel || '', auto: true });
+    }
+    if (fields.patientTel) {
+      const home = contacts.find(c => c.rel === '自宅');
+      if (home && !home.tel) Object.assign(home, { tel: fields.patientTel, auto: true });
+    }
+    buildContacts();
     for (const h of schedule) {
       if (sched[h.si] && !sched[h.si][h.day]) { sched[h.si][h.day] = 1; schedAuto[h.si][h.day] = 1; }
     }
@@ -1072,7 +1159,7 @@ window.__MASTER=[];
     updateOutputs();
   }
 
-  // ================= 週間スケジュール =================
+  // ================= ② 週間スケジュール =================
   function buildSchedule() {
     const t = $('schedTable');
     t.innerHTML = '';
@@ -1112,12 +1199,14 @@ window.__MASTER=[];
   }
 
   function finishSchedule(txt) {
-    const note = $('schedNote').value.trim();
-    if (note) txt += (txt ? settings.scheduleSep : '') + note;
+    const note = $('schedNote').value.replace(/\s+$/, '');
+    if (note) txt += (txt ? '\n' : '') + note;
     return txt;
   }
 
-  // ================= 頭書き項目（ポチポチ） =================
+  // ================= ③ 頭書き項目（ポチポチ） =================
+  const extraKey = (cat, opt) => cat.name + '|' + opt;
+
   function buildChips() {
     const root = $('chipGroups');
     root.innerHTML = '';
@@ -1132,11 +1221,27 @@ window.__MASTER=[];
             if (sel.has(opt)) sel.delete(opt);
             else { if (!cat.multi) sel.clear(); sel.add(opt); }
             buildChips(); updateOutputs();
+            const ex = cat.extras && cat.extras[opt];
+            if (ex && sel.has(opt)) { const inp = document.querySelector(`[data-extra="${CSS.escape(extraKey(cat, opt))}"]`); if (inp) inp.focus(); }
           },
         }, opt));
       }
+      const body = el('div', { class: 'cgroup-body' }, chips);
+      // 選んだ選択肢に追加入力があれば、その下に入力欄を出す
+      for (const opt of cat.options) {
+        const ex = cat.extras && cat.extras[opt];
+        if (!ex || !sel.has(opt)) continue;
+        const k = extraKey(cat, opt);
+        const inp = el('input', { type: 'text', 'data-extra': k, value: extraVals[k] || '', placeholder: ex.placeholder || '' });
+        inp.addEventListener('input', () => { extraVals[k] = inp.value; inp.classList.toggle('need', ex.required && !inp.value.trim()); updateOutputs(); });
+        if (ex.required && !(extraVals[k] || '').trim()) inp.classList.add('need');
+        body.append(el('label', { class: 'extra-row' }, el('span', null, ex.label, ex.required ? el('b', { class: 'req' }, '必須') : null), inp));
+      }
+      // 訪問前TEL「必要」のときは、①の連絡先を表示（患者メモの一番上に出る）
+      if (cat.special === 'visitTel' && sel.has('必要')) body.append(el('div', { class: 'visit-tel', id: 'visitTelPreview' }));
       root.append(el('div', { class: 'cgroup' },
-        el('div', { class: 'cgroup-name' }, cat.name, cat.multi ? el('small', null, '複数選択可') : null), chips));
+        el('div', { class: 'cgroup-name' }, cat.name,
+          el('small', null, (cat.multi ? '複数可・' : '') + '→' + DEST_LABEL[cat.dest || 'atama'])), body));
     }
     const chips = el('div', { class: 'chips' });
     for (const n of settings.notes) {
@@ -1145,34 +1250,76 @@ window.__MASTER=[];
         onclick: () => { noteSel.has(n) ? noteSel.delete(n) : noteSel.add(n); buildChips(); updateOutputs(); },
       }, n));
     }
-    root.append(el('div', { class: 'cgroup' }, el('div', { class: 'cgroup-name' }, '特記事項', el('small', null, '複数選択可')), chips));
+    root.append(el('div', { class: 'cgroup' }, el('div', { class: 'cgroup-name' }, '特記事項', el('small', null, '複数可・→患者メモ')), chips));
   }
 
-  function itemsText() {
+  // 選んだ項目の文字（追加入力があれば format に当てはめる）
+  function optionText(cat, opt) {
+    const ex = cat.extras && cat.extras[opt];
+    const v = (extraVals[extraKey(cat, opt)] || '').trim();
+    if (ex && v) return ex.format.replace('{値}', v);
+    return (cat.prefix || '') + opt;
+  }
+
+  function itemsText(dest) {
     const out = [];
     for (const cat of settings.categories) {
+      if ((cat.dest || 'atama') !== dest || cat.special === 'visitTel') continue;
       const sel = chipSel[cat.name];
       if (!sel) continue;
-      for (const opt of cat.options) if (sel.has(opt)) out.push((cat.prefix || '') + opt);
+      for (const opt of cat.options) if (sel.has(opt)) out.push(optionText(cat, opt));
     }
     return out.join(settings.itemSep);
   }
 
-  function notesText() {
-    const out = settings.notes.filter(n => noteSel.has(n));
-    const free = $('noteFree').value.trim();
-    if (free) out.push(free);
-    return out.join('、');
+  function visitTelSelected() {
+    const cat = settings.categories.find(c => c.special === 'visitTel');
+    const sel = cat && chipSel[cat.name];
+    return sel && [...sel][0] || '';
   }
 
-  // ================= 出力 =================
+  function visitTelText() {
+    const v = visitTelSelected();
+    if (v === '必要') {
+      const lines = contactLines();
+      return '【訪問前TEL必要】' + (lines.length ? '\n' + lines.join('\n') : '（連絡先未入力）');
+    }
+    return v ? '訪問前TEL' + v : '';
+  }
+
+  function notesText() {
+    const out = settings.notes.filter(n => noteSel.has(n));
+    const chosen = out.join('、');
+    const free = $('noteFree').value.replace(/\s+$/, '');
+    return [chosen, free].filter(Boolean).join('\n');
+  }
+
+  // 必須の追加入力が空のもの（出力先ごと）
+  function missingRequired(dest) {
+    const miss = [];
+    for (const cat of settings.categories) {
+      if (dest && (cat.dest || 'atama') !== dest) continue;
+      const sel = chipSel[cat.name];
+      if (!sel || !cat.extras) continue;
+      for (const opt of cat.options) {
+        const ex = cat.extras[opt];
+        if (ex && ex.required && sel.has(opt) && !(extraVals[extraKey(cat, opt)] || '').trim()) miss.push({ cat, opt, ex });
+      }
+    }
+    return miss;
+  }
+
+  // ================= ④ 出力 =================
   function currentValues() {
     const vals = {};
-    for (const [key, label] of ALL_FIELDS) vals[label] = fieldInputs[key].value.trim();
-    // 書式側で「先生」を付けるので、候補から「山田先生」を選んでも「先生先生」にならないように
-    vals['担当医名'] = vals['担当医名'].replace(/\s*(先生|医師|Dr\.?)$/, '');
+    for (const [key, name] of ALL_FIELDS) vals[name] = fieldInputs[key].value.trim();
+    const visitNeeded = visitTelSelected() === '必要';
+    vals['訪問前TEL'] = visitTelText();
+    // 訪問前TEL必要のときは一番上に連絡先を出すので、【連絡先】欄には重ねて出さない
+    vals['連絡先'] = visitNeeded ? '' : contactLines().join('\n');
     vals['スケジュール'] = scheduleText();
-    vals['頭書き項目'] = itemsText();
+    vals['頭書き項目'] = itemsText('atama');
+    vals['患者メモ項目'] = itemsText('memo');
     vals['特記事項'] = notesText();
     return vals;
   }
@@ -1184,20 +1331,45 @@ window.__MASTER=[];
     if (d.length === 11) return !/^0[5789]0/.test(d);
     return d.length !== 10;
   }
+  function markPhone(input, v) {
+    const bad = phoneLooksWrong(v);
+    input.classList.toggle('warn', bad);
+    input.title = bad ? '電話番号の桁数がおかしいかもしれません。確認してください' : '';
+  }
   function checkPhones() {
-    for (const [key, label] of ALL_FIELDS) {
-      if (!/TEL|FAX|電話|連絡先/.test(label)) continue;
-      const bad = phoneLooksWrong(fieldInputs[key].value.trim());
-      fieldInputs[key].classList.toggle('warn', bad);
-      fieldInputs[key].title = bad ? '電話番号の桁数がおかしいかもしれません。原本を確認してください' : '';
+    for (const [key, , label] of ALL_FIELDS) {
+      if (/TEL|携帯/.test(label)) markPhone(fieldInputs[key], fieldInputs[key].value.trim());
     }
+    document.querySelectorAll('#contacts .c-tel').forEach(inp => markPhone(inp, inp.value.trim()));
   }
 
   function updateOutputs() {
+    if (!fieldInputs.cmOffice) return;
     checkPhones();
     const vals = currentValues();
-    $('outReport').value = renderTemplate(settings.reportTemplate, vals);
-    $('outYakureki').value = renderTemplate(settings.yakurekiTemplate, vals);
+    $('outAtama').value = renderTemplate(settings.atamaTemplate, vals);
+    $('outMemo').value = renderTemplate(settings.memoTemplate, vals);
+    const pv = $('visitTelPreview');
+    if (pv) {
+      const lines = contactLines();
+      pv.textContent = lines.length ? '患者メモの一番上に出ます：\n' + lines.join('\n') : '⚠ ①の連絡先に電話番号を入力してください（患者メモの一番上に出ます）';
+      pv.classList.toggle('empty', !lines.length);
+    }
+  }
+
+  // コピー前に必須項目をチェック
+  function copyOutput(dest) {
+    const miss = missingRequired(dest);
+    if (miss.length) {
+      const first = miss[0];
+      buildChips();
+      const inp = document.querySelector(`[data-extra="${CSS.escape(extraKey(first.cat, first.opt))}"]`);
+      if (inp) { inp.scrollIntoView({ block: 'center', behavior: 'smooth' }); inp.focus(); }
+      toast(`「${first.cat.name}：${first.opt}」の${first.ex.label}を入力してください（必須）`);
+      return;
+    }
+    updateOutputs();
+    copyText($(dest === 'atama' ? 'outAtama' : 'outMemo').value);
   }
 
   // ================= 読み取りエンジン（Tesseract・PC内） =================
@@ -1463,22 +1635,35 @@ window.__MASTER=[];
   function buildPopupFields() {
     const root = $('selFields');
     root.innerHTML = '';
+    const flash = (input) => { input.classList.add('auto'); setTimeout(() => input.classList.remove('auto'), 900); };
+    const phoneOf = (v) => {
+      const ph = window.Extractor.findPhones(window.Extractor.normLine(v));
+      return ph.length ? ph[0].num : v;
+    };
+    root.append(el('div', { class: 'grp' }, '📞 連絡先'));
+    root.append(el('button', {
+      onclick: () => {
+        const v = $('selText').value.trim();
+        if (!v || v === '読み取り中…') return;
+        const tel = phoneOf(v);
+        const name = v.replace(tel, '').replace(/[:：\s]+$/, '').trim();
+        const empty = contacts.find(c => !c.tel && !c.name);
+        if (empty) Object.assign(empty, { name, tel }); else contacts.push({ rel: '', name, tel, kp: false });
+        buildContacts(); updateOutputs();
+        toast('連絡先に入れました（続柄を選んでください）');
+      },
+    }, '連絡先に追加'));
     for (const g of FIELD_GROUPS) {
       root.append(el('div', { class: 'grp' }, g.title));
-      for (const [key, label] of g.fields) {
+      for (const [key, , label] of g.fields) {
         root.append(el('button', {
           onclick: () => {
             const v = $('selText').value.trim();
             if (!v || v === '読み取り中…') return;
             // 電話番号欄には番号だけを入れる
-            let val = v;
-            if (/TEL|FAX|電話|連絡先/.test(label)) {
-              const ph = window.Extractor.findPhones(window.Extractor.normLine(v));
-              if (ph.length) val = /FAX/.test(label) && ph[1] ? ph[ph.length - 1].num : ph[0].num;
-            }
+            const val = /TEL|携帯/.test(label) ? phoneOf(v) : v;
             setField(key, val, false);
-            fieldInputs[key].classList.add('auto');
-            setTimeout(() => fieldInputs[key].classList.remove('auto'), 900);
+            flash(fieldInputs[key]);
             updateOutputs();
             toast(`「${label}」に入れました`);
           },
@@ -1493,18 +1678,22 @@ window.__MASTER=[];
   function openSettings() {
     const ce = $('catEditor');
     ce.innerHTML = '';
-    ce.append(el('div', { class: 'cat-row head' }, el('span', null, '項目名'), el('span', null, '出力の頭に付ける言葉'), el('span', null, '複数選択'), el('span', null, '選択肢（「、」区切り）'), el('span')));
+    ce.append(el('div', { class: 'cat-row head' }, el('span', null, '項目名'), el('span', null, '頭に付ける言葉'), el('span', null, '複数選択'), el('span', null, '選択肢（「、」区切り）'), el('span', null, '出力先'), el('span')));
     const addCatRow = (c) => {
+      const destSel = el('select', { 'data-k': 'dest' }, el('option', { value: 'atama' }, '頭書き'), el('option', { value: 'memo' }, '患者メモ'));
+      destSel.value = c.dest || 'atama';
       const row = el('div', { class: 'cat-row' },
         el('input', { type: 'text', value: c.name, 'data-k': 'name' }),
-        el('input', { type: 'text', value: c.prefix || '', 'data-k': 'prefix', placeholder: '例：駐車場' }),
+        el('input', { type: 'text', value: c.prefix || '', 'data-k': 'prefix', placeholder: '例：キーボックス' }),
         el('label', null, el('input', { type: 'checkbox', 'data-k': 'multi', checked: !!c.multi }), '可'),
         el('input', { type: 'text', value: c.options.join('、'), 'data-k': 'options' }),
+        destSel,
         el('button', { class: 'x', title: '削除', onclick: () => row.remove() }, '×'));
+      row._orig = c;
       ce.append(row);
     };
     settings.categories.forEach(addCatRow);
-    $('btnAddCat').onclick = () => addCatRow({ name: '', prefix: '', multi: false, options: [] });
+    $('btnAddCat').onclick = () => addCatRow({ name: '', prefix: '', multi: false, options: [], dest: 'atama' });
 
     $('setNotes').value = settings.notes.join('、');
 
@@ -1526,8 +1715,8 @@ window.__MASTER=[];
     $('setMaster').value = masterToText(localMaster);
     $('setSchedSep').value = settings.scheduleSep === '\n' ? '\\n' : ' ';
     $('setItemSep').value = settings.itemSep;
-    $('setReportTpl').value = settings.reportTemplate;
-    $('setYakurekiTpl').value = settings.yakurekiTemplate;
+    $('setAtamaTpl').value = settings.atamaTemplate;
+    $('setMemoTpl').value = settings.memoTemplate;
     $('phList').innerHTML = '';
     for (const name of [...ALL_FIELDS.map(f => f[1]), ...EXTRA_PLACEHOLDERS]) $('phList').append(el('code', null, '{' + name + '}'));
     $('settingsModal').hidden = false;
@@ -1535,12 +1724,21 @@ window.__MASTER=[];
 
   function readSettingsForm() {
     const s = clone(settings);
-    s.categories = [...$('catEditor').querySelectorAll('.cat-row:not(.head)')].map(r => ({
-      name: r.querySelector('[data-k=name]').value.trim(),
-      prefix: r.querySelector('[data-k=prefix]').value.trim(),
-      multi: r.querySelector('[data-k=multi]').checked,
-      options: splitList(r.querySelector('[data-k=options]').value),
-    })).filter(c => c.name && c.options.length);
+    s.categories = [...$('catEditor').querySelectorAll('.cat-row:not(.head)')].map(r => {
+      const o = r._orig || {};
+      const c = {
+        name: r.querySelector('[data-k=name]').value.trim(),
+        prefix: r.querySelector('[data-k=prefix]').value.trim(),
+        multi: r.querySelector('[data-k=multi]').checked,
+        options: splitList(r.querySelector('[data-k=options]').value),
+        dest: r.querySelector('[data-k=dest]').value,
+        extras: {},
+      };
+      // 追加入力（必須の番号・味など）と特別な動き（訪問前TEL）は、同じ選択肢が残っていれば引き継ぐ
+      for (const opt of c.options) if (o.extras && o.extras[opt]) c.extras[opt] = o.extras[opt];
+      if (o.special) c.special = o.special;
+      return c;
+    }).filter(c => c.name && c.options.length);
     s.notes = splitList($('setNotes').value);
     s.services = [...$('svcEditor').querySelectorAll('.svc-row')].map(r => ({
       name: r.querySelector('[data-k=name]').value.trim(),
@@ -1550,8 +1748,8 @@ window.__MASTER=[];
     s.scheduleJoin = $('setSchedJoin').value;
     s.scheduleSep = $('setSchedSep').value === '\\n' ? '\n' : ' ';
     s.itemSep = $('setItemSep').value;
-    s.reportTemplate = $('setReportTpl').value;
-    s.yakurekiTemplate = $('setYakurekiTpl').value;
+    s.atamaTemplate = $('setAtamaTpl').value;
+    s.memoTemplate = $('setMemoTpl').value;
     s.localMaster = parseMasterText($('setMaster').value);
     return s;
   }
@@ -1576,21 +1774,22 @@ window.__MASTER=[];
   }
 
   function exportSettings() {
+    // localMaster（この端末で追加した一覧）も含めて書き出す → 読み込んだ端末で同じ一覧になる
     const blob = new Blob([JSON.stringify(readSettingsForm(), null, 2)], { type: 'application/json' });
-    // ※ localMaster（この端末で追加した一覧）も含めて書き出す → 読み込んだ端末で同じ一覧になる
     const a = el('a', { href: URL.createObjectURL(blob), download: '頭書きツール設定.json' });
     document.body.append(a); a.click(); a.remove();
   }
 
   // ================= クリア =================
   function clearAll() {
-    if (!confirm('入力・読み取り内容をすべて消して、新しい患者さんの入力を始めますか？')) return;
+    if (!confirm('入力内容をすべて消して、新しい患者さんの入力を始めますか？')) return;
     for (const [key] of ALL_FIELDS) setField(key, '', false);
+    resetContacts();
     resetSchedule();
-    chipSel = {}; noteSel = new Set();
+    chipSel = {}; extraVals = {}; noteSel = new Set();
     $('schedNote').value = ''; $('noteFree').value = '';
     Object.values(masterSelects).forEach(s => { s.value = ''; });
-    document.querySelectorAll('datalist').forEach(d => { d.innerHTML = ''; });
+    document.querySelectorAll('datalist[id^=staff_]').forEach(d => { d.innerHTML = ''; });
     if (HAS_OCR) {
       pages.length = 0; curPage = 0;
       $('fullText').value = '';
@@ -1600,7 +1799,7 @@ window.__MASTER=[];
       $('fileInput').value = '';
       closePopup();
     }
-    buildSchedule(); buildChips(); updateOutputs();
+    buildContacts(); buildSchedule(); buildChips(); updateOutputs();
     window.scrollTo(0, 0);
   }
 
@@ -1611,15 +1810,20 @@ window.__MASTER=[];
       // ポチポチ版：読み取りパネルを外し、見出しの番号を1から振り直す
       $('viewerPanel').remove();
       document.querySelectorAll('.form-panel h2 .num').forEach((n, i) => { n.textContent = String(i + 1); });
-      $('fieldsTitle').textContent = '基本情報を入力（一覧から選ぶ＋手入力）';
     }
+    const relList = el('datalist', { id: 'relOptions' });
+    REL_OPTIONS.forEach(r => relList.append(el('option', { value: r })));
+    document.body.append(relList);
+
     buildFields();
+    buildContacts();
     buildStoreSelect();
     refreshMasterSelects();
     buildSchedule();
     buildChips();
     updateOutputs();
 
+    $('btnAddContact').onclick = () => { contacts.push({ rel: '', name: '', tel: '', kp: false }); buildContacts(); const rows = document.querySelectorAll('#contacts .contact-row input'); if (rows.length) rows[rows.length - 3].focus(); };
     $('storeSelect').addEventListener('change', (e) => {
       currentStore = e.target.value;
       try { localStorage.setItem(STORE_KEY, currentStore); } catch (err) { /* 記憶できなくても動作は続ける */ }
@@ -1649,12 +1853,11 @@ window.__MASTER=[];
       };
       $('selClose').onclick = closePopup;
     }
-
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (HAS_OCR) closePopup(); $('settingsModal').hidden = true; $('helpModal').hidden = true; } });
 
     $('schedNote').addEventListener('input', updateOutputs);
     $('noteFree').addEventListener('input', updateOutputs);
-    document.querySelectorAll('[data-copy]').forEach(b => { b.onclick = () => copyText($(b.dataset.copy).value); });
+    document.querySelectorAll('[data-copy]').forEach(b => { b.onclick = () => copyOutput(b.dataset.copy); });
 
     $('btnClear').onclick = clearAll;
     $('btnHelp').onclick = () => { $('helpModal').hidden = false; };
@@ -1662,7 +1865,7 @@ window.__MASTER=[];
     document.querySelectorAll('[data-close]').forEach(b => { b.onclick = () => { $(b.dataset.close).hidden = true; }; });
     $('btnSaveSettings').onclick = () => { applySettings(readSettingsForm()); $('settingsModal').hidden = true; toast('設定を保存しました'); };
     $('btnResetSettings').onclick = () => {
-      if (!confirm('選択肢・書式を初期設定に戻しますか？')) return;
+      if (!confirm('選択肢・書式を初期設定に戻しますか？（ケアマネ・訪看の一覧は消えません）')) return;
       applySettings(clone(DEFAULT_SETTINGS)); openSettings();
     };
     $('btnExport').onclick = exportSettings;
